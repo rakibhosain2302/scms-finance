@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
+         colors="true"
+         failOnWarning="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_KEY" value="base64:c2Ntcy1maW5hbmNlLXBhY2thZ2UtdGVzdC1rZXktMzI=" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <!-- Database tests need MySQL / MariaDB (the CHECK constraint and row locks are part of what is tested).
+             Point them at an EMPTY database that may be wiped:
+             FINANCE_TEST_DB_DATABASE=scms_finance_test FINANCE_TEST_DB_USERNAME=... FINANCE_TEST_DB_PASSWORD=... vendor/bin/phpunit
+             Without FINANCE_TEST_DB_DATABASE those tests are skipped; the unit tests always run. -->
+    </php>
+</phpunit>

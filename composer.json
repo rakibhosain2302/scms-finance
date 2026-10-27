@@ -1,0 +1,63 @@
+{
+    "name": "scms/finance",
+    "type": "library",
+    "description": "Double-entry finance and accounting for Laravel: chart of accounts, journal, savings, loans, income, expense, cash, bank, transfers and reports.",
+    "keywords": [
+        "laravel",
+        "accounting",
+        "double-entry",
+        "savings",
+        "loans",
+        "cooperative"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rakib Hosain",
+            "email": "rakibhosain2302@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "brick/math": "^0.12|^0.13|^0.14|^1.0",
+        "laravel/framework": "^12.0|^13.0"
+    },
+    "require-dev": {
+        "nit/master": "dev-master",
+        "orchestra/testbench": "^10.0|^11.0",
+        "phpunit/phpunit": "^11.0|^12.0"
+    },
+    "suggest": {
+        "nit/master": "Branches, roles/abilities, activity log and the admin layout used by the bundled screens."
+    },
+    "autoload": {
+        "psr-4": {
+            "SCMS\\Finance\\": "src/",
+            "SCMS\\Finance\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SCMS\\Finance\\Tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../nit-master"
+        }
+    ],
+    "scripts": {
+        "test": "phpunit"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "SCMS\\Finance\\SCMSFinanceServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
