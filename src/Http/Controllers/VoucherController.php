@@ -11,6 +11,7 @@ use SCMS\Finance\Models\Account;
 use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\Voucher;
 use SCMS\Finance\Services\VoucherService;
+use SCMS\Finance\Support\MakerChecker;
 
 /** Income and expense vouchers share these screens; the subclasses name the kind. */
 abstract class VoucherController extends Controller
@@ -61,7 +62,7 @@ abstract class VoucherController extends Controller
     public function store(VoucherRequest $request)
     {
         $this->authorizeAbility($this->ability('create'));
-        $post = $request->boolean('post') && $request->user()->can($this->ability('post'));
+        $post = $request->boolean('post') && $request->user()->can($this->ability('post')) && MakerChecker::selfPostingAllowed($request->user());
 
         return $this->attempt(
             fn () => $this->service()->create($request->validated(), $request->file('attachment'), $post, $request->user()),
@@ -151,7 +152,7 @@ abstract class VoucherController extends Controller
             'branch' => $branch,
             'accounts' => Account::options($branch, $this->accountType()),
             'cashAccounts' => CashBankAccount::options($branch),
-            'canPost' => auth()->user()->can($this->ability('post')),
+            'canPost' => auth()->user()->can($this->ability('post')) && MakerChecker::selfPostingAllowed(auth()->user()),
         ];
     }
 }

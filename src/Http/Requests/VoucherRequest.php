@@ -2,8 +2,15 @@
 
 namespace SCMS\Finance\Http\Requests;
 
+use SCMS\Finance\Support\Abilities;
+
 class VoucherRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return str_contains((string) $this->route()?->getName(), 'incomes') ? Abilities::INCOME_CREATE : Abilities::EXPENSE_CREATE;
+    }
+
     public function rules(): array
     {
         $attachments = config('scms-finance.attachments');

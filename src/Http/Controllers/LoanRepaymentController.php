@@ -4,6 +4,7 @@ namespace SCMS\Finance\Http\Controllers;
 
 use Illuminate\Http\Request;
 use SCMS\Finance\Enums\EntryStatus;
+use SCMS\Finance\Enums\PenaltyType;
 use SCMS\Finance\Http\Requests\LoanRepaymentRequest;
 use SCMS\Finance\Http\Requests\ReasonRequest;
 use SCMS\Finance\Models\CashBankAccount;
@@ -14,6 +15,7 @@ use SCMS\Finance\Services\LedgerService;
 use SCMS\Finance\Services\LoanRepaymentService;
 use SCMS\Finance\Support\Abilities;
 use SCMS\Finance\Support\Money;
+use SCMS\Finance\Support\PenaltyCalculator;
 
 class LoanRepaymentController extends Controller
 {
@@ -39,7 +41,7 @@ class LoanRepaymentController extends Controller
         ]);
     }
 
-    public function create(Loan $loan, LedgerService $ledger)
+    public function create(Loan $loan, LedgerService $ledger, PenaltyCalculator $penalties)
     {
         $this->authorizeAbility('repay', $loan);
         $unpaid = LoanInstallment::query()->where('loan_id', $loan->id)->unpaid()->orderBy('installment_no')->get();
@@ -52,6 +54,8 @@ class LoanRepaymentController extends Controller
             'payoff' => Money::sum($unpaid->map->remaining()),
             'dueNow' => Money::sum($due->map->remaining()),
             'next' => $unpaid->first(),
+            'penaltyRule' => ($loan->product->penalty_type ?? PenaltyType::None) !== PenaltyType::None,
+            'penaltyOwed' => Money::sum($penalties->due($loan->product, $unpaid, today())->all()),
             'cashAccounts' => CashBankAccount::options($loan->branch_id),
         ]);
     }

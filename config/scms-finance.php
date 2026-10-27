@@ -77,10 +77,12 @@ return [
             'journal' => 'JV',
             'savings_deposit' => 'DEP',
             'savings_withdrawal' => 'WDR',
+            'savings_interest' => 'INT',
             'savings_account' => 'SAV',
             'loan' => 'LOAN',
             'loan_disbursement' => 'DSB',
             'loan_repayment' => 'REP',
+            'loan_write_off' => 'WOF',
             'income' => 'INC',
             'expense' => 'EXP',
             'transfer' => 'TRF',
@@ -104,6 +106,8 @@ return [
         'interest_income' => '4200',
         'penalty_income' => '4300',
         'fee_income' => '4400',
+        'loan_write_off' => '5700',
+        'savings_interest_expense' => '5800',
     ],
 
     'rules' => [
@@ -113,6 +117,12 @@ return [
         'backdate_days' => null,
         // Whoever entered a loan application may not approve it (super admins excepted).
         'loan_self_approval' => false,
+        // Whoever wrote a draft journal, income or expense voucher or transfer may not post it
+        // (super admins excepted). true lets one person write and post.
+        'self_posting' => env('SCMS_FINANCE_SELF_POSTING', false),
+        // Staff (not super admins) without any branch see and touch no branch. nit-master would let
+        // them see every branch; false keeps that rule.
+        'require_branch' => env('SCMS_FINANCE_REQUIRE_BRANCH', true),
         // Repayment order inside each installment.
         'repayment_order' => ['interest', 'principal'],
     ],

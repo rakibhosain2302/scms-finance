@@ -18,6 +18,7 @@ use SCMS\Finance\Exceptions\InvalidStateException;
 use SCMS\Finance\Models\Account;
 use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\Voucher;
+use SCMS\Finance\Support\MakerChecker;
 use SCMS\Finance\Support\Money;
 use Throwable;
 
@@ -108,6 +109,7 @@ abstract class VoucherService
     {
         $voucher = DB::transaction(function () use ($voucher, $user) {
             $voucher = $this->lockDraft($voucher, $user);
+            MakerChecker::assertMayPost($user, $voucher);
             [$account, $cash] = $this->check($voucher, (int) $voucher->branch_id);
 
             $entry = $this->journal->record([

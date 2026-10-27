@@ -2,10 +2,16 @@
 
 namespace SCMS\Finance\Http\Requests;
 
+use SCMS\Finance\Support\Abilities;
 use SCMS\Finance\Support\Money;
 
 class JournalRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::JOURNAL_CREATE;
+    }
+
     protected function prepareForValidation(): void
     {
         // Rows the form left empty are not lines.

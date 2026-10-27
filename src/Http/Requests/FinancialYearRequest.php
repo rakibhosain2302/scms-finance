@@ -2,8 +2,15 @@
 
 namespace SCMS\Finance\Http\Requests;
 
+use SCMS\Finance\Support\Abilities;
+
 class FinancialYearRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::YEAR_MANAGE;
+    }
+
     public function rules(): array
     {
         return [

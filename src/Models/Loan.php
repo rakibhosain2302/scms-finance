@@ -38,6 +38,7 @@ class Loan extends FinanceModel
             'disbursed_on' => 'date',
             'first_due_on' => 'date',
             'closed_on' => 'date',
+            'written_off_on' => 'date',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
         ];
@@ -66,6 +67,11 @@ class Loan extends FinanceModel
     public function disbursementEntry(): BelongsTo
     {
         return $this->belongsTo(JournalEntry::class, 'disbursement_entry_id')->withoutGlobalScope('finance_branch');
+    }
+
+    public function writeOffEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'write_off_entry_id')->withoutGlobalScope('finance_branch');
     }
 
     public function approver(): BelongsTo

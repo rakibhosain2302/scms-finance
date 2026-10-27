@@ -11,6 +11,7 @@ use SCMS\Finance\Enums\LineComponent;
 use SCMS\Finance\Enums\LoanStatus;
 use SCMS\Finance\Events\LoanDisbursed;
 use SCMS\Finance\Events\LoanStatusChanged;
+use SCMS\Finance\Events\LoanWrittenOff;
 use SCMS\Finance\Events\TransactionReversed;
 use SCMS\Finance\Exceptions\BranchAccessException;
 use SCMS\Finance\Exceptions\FinanceException;
@@ -20,6 +21,7 @@ use SCMS\Finance\Models\Loan;
 use SCMS\Finance\Models\LoanInstallment;
 use SCMS\Finance\Models\LoanProduct;
 use SCMS\Finance\Models\LoanRepayment;
+use SCMS\Finance\Support\AccountMap;
 use SCMS\Finance\Support\LoanScheduleCalculator;
 use SCMS\Finance\Support\Money;
 
@@ -216,6 +218,71 @@ class LoanService
         });
 
         event(new TransactionReversed($loan, $reversal, $reason, $user?->getAuthIdentifier()));
+
+        return $loan;
+    }
+
+    /**
+     * Writes off what a member will not repay: the principal still owed leaves the receivable and
+     * becomes an expense. Interest never received was never income, so nothing else moves.
+     *
+     *     Dr Loan loss (expense)    Cr Loan receivable (principal)
+     *
+     * @param  array{written_off_on: string, reason: string}  $data
+     */
+    public function writeOff(Loan $loan, array $data, ?Authenticatable $user): Loan
+    {
+        if (trim((string) ($data['reason'] ?? '')) === '') {
+            throw new FinanceException(__('Give the reason for the write-off.'));
+        }
+        $this->years->assertPostingDate($data['written_off_on']);
+
+        [$loan, $from] = DB::transaction(function () use ($loan, $data, $user) {
+            $loan = $this->lock($loan, $user);
+            $from = $loan->status;
+            if (! $loan->status->isRunning()) {
+                throw new InvalidStateException(__('Only a running loan can be written off; this one is :status.', ['status' => $loan->status->label()]));
+            }
+            $date = Carbon::parse($data['written_off_on'])->startOfDay();
+            if ($date->lt($loan->disbursed_on)) {
+                throw new FinanceException(__('The write-off cannot be dated before the disbursement.'));
+            }
+
+            $outstanding = $this->ledger->loanOutstanding($loan->id);
+            if (! $outstanding->isPositive()) {
+                throw new InvalidStateException(__('Nothing of the principal is owed.'));
+            }
+
+            $product = $loan->product()->with('receivableAccount')->firstOrFail();
+            $tags = ['loan_id' => $loan->id, 'member_id' => $loan->member_id];
+            $entry = $this->journal->record([
+                'branch_id' => $loan->branch_id,
+                'entry_date' => $date,
+                'description' => __('Write-off of :number: :reason', ['number' => $loan->loan_number, 'reason' => $data['reason']]),
+                'reference' => $loan->loan_number,
+                'source_type' => 'loan_write_off',
+                'source_id' => $loan->id,
+                'number_key' => 'loan_write_off',
+            ], [
+                JournalService::debit(app(AccountMap::class)->get('loan_write_off'), $outstanding, $tags + ['component' => LineComponent::WriteOff]),
+                JournalService::credit($product->receivableAccount, $outstanding, $tags + ['component' => LineComponent::Principal]),
+            ], $user);
+
+            $loan->forceFill([
+                'status' => LoanStatus::WrittenOff->value,
+                'written_off_on' => $date->toDateString(),
+                'written_off_by' => $user?->getAuthIdentifier(),
+                'write_off_entry_id' => $entry->id,
+                'write_off_reason' => mb_substr($data['reason'], 0, 500),
+                'closed_on' => $date->toDateString(),
+            ])->save();
+            $this->refreshOutstanding($loan);
+
+            return [$loan, $from];
+        });
+
+        event(new LoanWrittenOff($loan, $user?->getAuthIdentifier()));
+        event(new LoanStatusChanged($loan, $from->value, LoanStatus::WrittenOff->value, $user?->getAuthIdentifier()));
 
         return $loan;
     }

@@ -12,6 +12,7 @@ use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\JournalEntry;
 use SCMS\Finance\Services\JournalService;
 use SCMS\Finance\Support\Abilities;
+use SCMS\Finance\Support\MakerChecker;
 
 class JournalController extends Controller
 {
@@ -136,7 +137,7 @@ class JournalController extends Controller
             'accounts' => Account::query()->postable()->whereNotIn('subtype', [AccountSubtype::MemberSavings->value, AccountSubtype::LoanReceivable->value])
                 ->orderBy('code')->get(['id', 'code', 'name', 'subtype', 'branch_id']),
             'cashAccounts' => CashBankAccount::query()->active()->with('branch:id,name')->orderBy('name')->get(),
-            'canPost' => auth()->user()->can(Abilities::JOURNAL_POST),
+            'canPost' => auth()->user()->can(Abilities::JOURNAL_POST) && MakerChecker::selfPostingAllowed(auth()->user()),
         ];
     }
 }

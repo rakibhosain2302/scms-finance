@@ -7,9 +7,16 @@ use SCMS\Finance\Enums\AccountSubtype;
 use SCMS\Finance\Enums\AccountType;
 use SCMS\Finance\Enums\Frequency;
 use SCMS\Finance\Enums\InterestMethod;
+use SCMS\Finance\Enums\PenaltyType;
+use SCMS\Finance\Support\Abilities;
 
 class LoanProductRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::LOAN_PRODUCT_MANAGE;
+    }
+
     public function rules(): array
     {
         $account = fn (string $column, string $value) => ['required', 'integer', Rule::exists('finance_accounts', 'id')->where($column, $value)->where('is_postable', true)];
@@ -26,6 +33,8 @@ class LoanProductRequest extends FinanceRequest
             'max_amount' => array_merge($this->moneyRule(false), ['gte:min_amount']),
             'processing_fee_rate' => $this->rateRule(),
             'grace_days' => ['nullable', 'integer', 'min:0', 'max:365'],
+            'penalty_type' => ['required', Rule::enum(PenaltyType::class)],
+            'penalty_value' => ['required_unless:penalty_type,none', 'nullable', 'decimal:0,4', 'gte:0', 'max:9999999999'],
             'receivable_account_id' => $account('subtype', AccountSubtype::LoanReceivable->value),
             'interest_income_account_id' => $account('type', AccountType::Income->value),
             'penalty_income_account_id' => $account('type', AccountType::Income->value),
@@ -42,6 +51,7 @@ class LoanProductRequest extends FinanceRequest
             $data['interest_rate'] = ($data['interest_method'] ?? null) === InterestMethod::None->value ? '0' : ($data['interest_rate'] ?? '0');
             $data['processing_fee_rate'] ??= '0';
             $data['grace_days'] ??= 0;
+            $data['penalty_value'] = ($data['penalty_type'] ?? null) === PenaltyType::None->value ? '0' : ($data['penalty_value'] ?? '0');
         }
 
         return $data;

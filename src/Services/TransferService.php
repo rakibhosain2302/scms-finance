@@ -14,6 +14,7 @@ use SCMS\Finance\Exceptions\FinanceException;
 use SCMS\Finance\Exceptions\InvalidStateException;
 use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\Transfer;
+use SCMS\Finance\Support\MakerChecker;
 use SCMS\Finance\Support\Money;
 
 /**
@@ -69,6 +70,7 @@ class TransferService
     {
         $transfer = DB::transaction(function () use ($transfer, $user) {
             $transfer = $this->lockDraft($transfer, $user);
+            MakerChecker::assertMayPost($user, $transfer);
             [$from, $to] = $this->check($transfer, (int) $transfer->branch_id);
             $tag = fn (CashBankAccount $a) => ['cash_bank_account_id' => $a->id, 'component' => LineComponent::Transfer];
 

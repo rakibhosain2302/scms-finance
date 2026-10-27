@@ -19,7 +19,7 @@ class SCMSFinanceServiceProvider extends ServiceProvider
     private const LOGGED_EVENTS = [
         Events\DepositPosted::class, Events\WithdrawalPosted::class, Events\LoanDisbursed::class, Events\LoanRepaymentPosted::class,
         Events\IncomePosted::class, Events\ExpensePosted::class, Events\TransferPosted::class, Events\JournalPosted::class,
-        Events\TransactionReversed::class, Events\LoanStatusChanged::class,
+        Events\TransactionReversed::class, Events\LoanStatusChanged::class, Events\SavingsInterestPosted::class, Events\LoanWrittenOff::class,
     ];
 
     public function register(): void

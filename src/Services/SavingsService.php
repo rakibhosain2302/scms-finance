@@ -13,6 +13,8 @@ use SCMS\Finance\Exceptions\FinanceException;
 use SCMS\Finance\Exceptions\InvalidStateException;
 use SCMS\Finance\Models\SavingsAccount;
 use SCMS\Finance\Models\SavingsScheme;
+use SCMS\Finance\Support\Abilities;
+use SCMS\Finance\Support\Money;
 
 /** Savings accounts: opening, dormancy, closing. Money moves through SavingsTransactionService. */
 class SavingsService
@@ -22,17 +24,26 @@ class SavingsService
         private readonly LedgerService $ledger,
         private readonly TransactionNumberService $numbers,
         private readonly MemberDirectory $members,
+        private readonly SavingsTransactionService $transactions,
     ) {
     }
 
-    /** @param  array{branch_id: int, member_id: int, savings_scheme_id: int, opened_on: string, note?: ?string}  $data */
+    /**
+     * Opens an account; opening_balance (go-live) brings in what the member already had, dated opened_on.
+     *
+     * @param  array{branch_id: int, member_id: int, savings_scheme_id: int, opened_on: string, note?: ?string, opening_balance?: ?string}  $data
+     */
     public function open(array $data, ?Authenticatable $user): SavingsAccount
     {
         $branchId = (int) $data['branch_id'];
         $this->journal->assertBranch($user, $branchId);
         $this->assertMemberOfBranch($data['member_id'], $branchId);
+        $opening = Money::of($data['opening_balance'] ?? null);
+        if ($opening->isPositive() && $user && ! $user->can(Abilities::SAVINGS_OPENING)) {
+            throw new FinanceException(__('Entering an opening balance needs its own permission.'));
+        }
 
-        return DB::transaction(function () use ($data, $branchId, $user) {
+        return DB::transaction(function () use ($data, $branchId, $user, $opening) {
             $scheme = SavingsScheme::query()->findOrFail($data['savings_scheme_id']);
             if (! $scheme->is_active) {
                 throw new FinanceException(__('The scheme :name is turned off.', ['name' => $scheme->name]));
@@ -50,7 +61,11 @@ class SavingsService
                 'created_by' => $user?->getAuthIdentifier(),
             ])->save();
 
-            return $account;
+            if ($opening->isPositive()) {
+                $this->transactions->creditOpeningBalance($account, $opening, $account->opened_on->toDateString(), $user);
+            }
+
+            return $account->refresh();
         });
     }
 

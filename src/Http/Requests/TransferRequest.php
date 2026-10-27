@@ -2,8 +2,15 @@
 
 namespace SCMS\Finance\Http\Requests;
 
+use SCMS\Finance\Support\Abilities;
+
 class TransferRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::TRANSFER_CREATE;
+    }
+
     public function rules(): array
     {
         return array_merge($this->isMethod('post') ? ['branch_id' => $this->branchRule()] : [], [

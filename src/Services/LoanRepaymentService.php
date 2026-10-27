@@ -4,11 +4,13 @@ namespace SCMS\Finance\Services;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use SCMS\Finance\Enums\EntryStatus;
 use SCMS\Finance\Enums\InstallmentStatus;
 use SCMS\Finance\Enums\LineComponent;
 use SCMS\Finance\Enums\LoanStatus;
+use SCMS\Finance\Enums\PenaltyType;
 use SCMS\Finance\Events\LoanRepaymentPosted;
 use SCMS\Finance\Events\LoanStatusChanged;
 use SCMS\Finance\Events\TransactionReversed;
@@ -18,8 +20,10 @@ use SCMS\Finance\Exceptions\InvalidStateException;
 use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\Loan;
 use SCMS\Finance\Models\LoanInstallment;
+use SCMS\Finance\Models\LoanProduct;
 use SCMS\Finance\Models\LoanRepayment;
 use SCMS\Finance\Support\Money;
+use SCMS\Finance\Support\PenaltyCalculator;
 use SCMS\Finance\Support\RepaymentAllocator;
 
 /**
@@ -38,6 +42,7 @@ class LoanRepaymentService
         private readonly TransactionNumberService $numbers,
         private readonly LoanService $loans,
         private readonly RepaymentAllocator $allocator,
+        private readonly PenaltyCalculator $penalties,
     ) {
     }
 
@@ -71,6 +76,8 @@ class LoanRepaymentService
 
             $installments = LoanInstallment::query()->where('loan_id', $loan->id)->unpaid()
                 ->orderBy('installment_no')->lockForUpdate()->get();
+            $product = $loan->product()->with(['receivableAccount', 'interestIncomeAccount', 'penaltyIncomeAccount'])->firstOrFail();
+            $penaltyParts = $this->penaltyParts($product, $installments, $penalty, $data['repayment_date']);
             $split = $this->allocator->allocate(
                 $installments->map(fn (LoanInstallment $i) => ['id' => $i->id, 'principal_remaining' => $i->principalRemaining(), 'interest_remaining' => $i->interestRemaining()]),
                 $amount->minus($penalty),
@@ -80,7 +87,6 @@ class LoanRepaymentService
                 throw new FinanceException(__('The payment is :extra more than the loan still owes.', ['extra' => $split['leftover']->format()]));
             }
 
-            $product = $loan->product()->with(['receivableAccount', 'interestIncomeAccount', 'penaltyIncomeAccount'])->firstOrFail();
             $year = $this->years->openYearFor($data['repayment_date']);
             $number = $this->numbers->next('loan_repayment', $data['repayment_date'], (int) $loan->branch_id);
 
@@ -103,9 +109,25 @@ class LoanRepaymentService
             ])->save();
 
             $byId = $installments->keyBy('id');
-            foreach ($split['allocations'] as $part) {
-                $repayment->allocations()->create(['loan_installment_id' => $part['id'], 'principal' => $part['principal']->toString(), 'interest' => $part['interest']->toString()]);
-                $this->apply($byId[$part['id']], $part['principal'], $part['interest'], $data['repayment_date']);
+            $parts = collect($split['allocations'])->keyBy('id');
+            foreach ($installments as $installment) {
+                $part = $parts->get($installment->id);
+                $penaltyPart = $penaltyParts->get($installment->id, Money::zero());
+                if (! $part && ! $penaltyPart->isPositive()) {
+                    continue;
+                }
+                $repayment->allocations()->create([
+                    'loan_installment_id' => $installment->id,
+                    'principal' => ($part['principal'] ?? Money::zero())->toString(),
+                    'interest' => ($part['interest'] ?? Money::zero())->toString(),
+                    'penalty' => $penaltyPart->toString(),
+                ]);
+                if ($part) {
+                    $this->apply($byId[$installment->id], $part['principal'], $part['interest'], $data['repayment_date']);
+                }
+                if ($penaltyPart->isPositive()) {
+                    $this->chargePenalty($byId[$installment->id], $penaltyPart);
+                }
             }
 
             $tags = ['loan_id' => $loan->id, 'member_id' => $loan->member_id];
@@ -167,6 +189,9 @@ class LoanRepaymentService
             $installments = LoanInstallment::query()->where('loan_id', $loan->id)->lockForUpdate()->get()->keyBy('id');
             foreach ($repayment->allocations as $part) {
                 $this->apply($installments[$part->loan_installment_id], Money::of($part->principal)->negated(), Money::of($part->interest)->negated(), null);
+                if (Money::of($part->penalty)->isPositive()) {
+                    $this->chargePenalty($installments[$part->loan_installment_id], Money::of($part->penalty)->negated());
+                }
             }
 
             $reversal = $this->journal->reverse($repayment->journalEntry, $reason, $user);
@@ -197,6 +222,49 @@ class LoanRepaymentService
             'status' => ($paid ? InstallmentStatus::Paid : ($installment->totalPaid()->isPositive() ? InstallmentStatus::Partial : InstallmentStatus::Pending))->value,
             'paid_on' => $paid ? ($installment->paid_on?->toDateString() ?? $date) : null,
         ])->save();
+    }
+
+    /**
+     * The penalty taken, spread over the late installments oldest first. Under a product rule it
+     * may not exceed what the rule asks (less may be taken: the rest stays owed); without a rule
+     * any penalty is accepted and not tied to an installment.
+     *
+     * @return Collection<int, Money> installment id => penalty
+     */
+    private function penaltyParts(LoanProduct $product, Collection $installments, Money $penalty, string $date): Collection
+    {
+        if (($product->penalty_type ?? PenaltyType::None) === PenaltyType::None || ! $penalty->isPositive()) {
+            return collect();
+        }
+
+        $owed = $this->penalties->due($product, $installments, Carbon::parse($date));
+        $total = Money::sum($owed->all());
+        if ($penalty->greaterThan($total)) {
+            throw new FinanceException(__('The penalty owed is :owed; :amount is more.', ['owed' => $total->format(), 'amount' => $penalty->format()]));
+        }
+
+        $parts = collect();
+        $left = $penalty;
+        foreach ($owed as $id => $amount) {
+            if (! $left->isPositive()) {
+                break;
+            }
+            $parts[$id] = Money::min($amount, $left);
+            $left = $left->minus($parts[$id]);
+        }
+
+        return $parts;
+    }
+
+    /** Adds (or with a negative amount, takes back) penalty charged on an installment. */
+    private function chargePenalty(LoanInstallment $installment, Money $amount): void
+    {
+        $charged = $installment->money('penalty_charged')->plus($amount);
+        if ($charged->isNegative()) {
+            throw new FinanceException(__('Installment :n would be paid wrongly; nothing was saved.', ['n' => $installment->installment_no]));
+        }
+
+        $installment->forceFill(['penalty_charged' => $charged->toString()])->save();
     }
 
     /** Completed when every installment is paid, else partially paid (active before any payment). */

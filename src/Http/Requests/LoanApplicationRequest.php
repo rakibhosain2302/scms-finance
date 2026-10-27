@@ -2,8 +2,15 @@
 
 namespace SCMS\Finance\Http\Requests;
 
+use SCMS\Finance\Support\Abilities;
+
 class LoanApplicationRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::LOAN_CREATE;
+    }
+
     public function rules(): array
     {
         return [

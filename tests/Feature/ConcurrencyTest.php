@@ -20,6 +20,14 @@ class ConcurrencyTest extends DatabaseTestCase
 {
     use DatabaseTruncation;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Truncation runs before each test; empty the tables after too, so the committed rows do
+        // not reach the next test class, which rolls back a transaction instead.
+        $this->beforeApplicationDestroyed(fn () => $this->truncateDatabaseTables());
+    }
+
     private function other(): \Illuminate\Database\Connection
     {
         config(['database.connections.finance_other' => config('database.connections.'.config('database.default'))]);

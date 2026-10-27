@@ -20,6 +20,8 @@
                 <x-nit::input name="min_amount" inputmode="decimal" :label="__('Smallest loan')" :value="$product->min_amount" required />
                 <x-nit::input name="max_amount" inputmode="decimal" :label="__('Largest loan')" :value="$product->max_amount" :hint="__('Empty = no limit')" />
                 <x-nit::input name="grace_days" type="number" min="0" :label="__('Grace days')" :value="$product->grace_days" :hint="__('Days after the due date before a penalty is asked for.')" />
+                <x-nit::select name="penalty_type" :label="__('Late payment penalty')" :options="$penaltyTypes" :value="$product->penalty_type?->value ?? 'none'" required :hint="__('Charged once per late installment; the repayment form fills it in. Changes apply to running loans too.')" />
+                <x-nit::input name="penalty_value" inputmode="decimal" :label="__('Penalty amount or %')" :value="$product->penalty_value" :hint="__('Fixed: taka per late installment. Percent: of what is still unpaid on it.')" />
                 <div></div>
                 <x-nit::select name="receivable_account_id" :label="__('Loan receivable account')" :options="$receivables" :value="$product->receivable_account_id" required :placeholder="__('Choose…')" />
                 <x-nit::select name="interest_income_account_id" :label="__('Interest income account')" :options="$incomeAccounts" :value="$product->interest_income_account_id" required :placeholder="__('Choose…')" />

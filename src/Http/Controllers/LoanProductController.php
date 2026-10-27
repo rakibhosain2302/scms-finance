@@ -6,6 +6,7 @@ use SCMS\Finance\Enums\AccountSubtype;
 use SCMS\Finance\Enums\AccountType;
 use SCMS\Finance\Enums\Frequency;
 use SCMS\Finance\Enums\InterestMethod;
+use SCMS\Finance\Enums\PenaltyType;
 use SCMS\Finance\Http\Requests\LoanProductRequest;
 use SCMS\Finance\Models\Account;
 use SCMS\Finance\Models\LoanProduct;
@@ -74,6 +75,7 @@ class LoanProductController extends Controller
         return [
             'product' => $product,
             'methods' => InterestMethod::options(),
+            'penaltyTypes' => PenaltyType::options(),
             'frequencies' => Frequency::options(Frequency::repaymentCases()),
             'receivables' => Account::options(null, null, AccountSubtype::LoanReceivable),
             'incomeAccounts' => Account::options(null, AccountType::Income),

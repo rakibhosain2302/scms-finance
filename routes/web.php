@@ -21,6 +21,7 @@ Route::post('journals/{journalEntry}/reverse', [C\JournalController::class, 'rev
 
 // Cash and bank
 Route::resource('cash-bank', C\CashBankAccountController::class)->except('destroy')->parameters(['cash-bank' => 'cashBankAccount']);
+Route::resource('reconciliations', C\ReconciliationController::class)->except(['edit']);
 Route::resource('transfers', C\TransferController::class)->except('destroy');
 Route::post('transfers/{transfer}/post', [C\TransferController::class, 'post'])->name('transfers.post');
 Route::post('transfers/{transfer}/cancel', [C\TransferController::class, 'cancel'])->name('transfers.cancel');
@@ -32,6 +33,8 @@ Route::resource('savings-accounts', C\SavingsAccountController::class)->only(['i
 Route::post('savings-accounts/{savingsAccount}/status', [C\SavingsAccountController::class, 'status'])->name('savings-accounts.status');
 Route::resource('savings-transactions', C\SavingsTransactionController::class)->only(['index', 'create', 'store', 'show'])->parameters(['savings-transactions' => 'savingsTransaction']);
 Route::post('savings-transactions/{savingsTransaction}/reverse', [C\SavingsTransactionController::class, 'reverse'])->name('savings-transactions.reverse');
+Route::get('savings-interest', [C\SavingsInterestController::class, 'create'])->name('savings-interest.create');
+Route::post('savings-interest', [C\SavingsInterestController::class, 'store'])->name('savings-interest.store');
 
 // Loans
 Route::resource('loan-products', C\LoanProductController::class)->except(['show', 'destroy'])->parameters(['loan-products' => 'loanProduct']);
@@ -43,6 +46,7 @@ Route::post('loans/{loan}/cancel', [C\LoanController::class, 'cancel'])->name('l
 Route::get('loans/{loan}/disburse', [C\LoanController::class, 'disburseForm'])->name('loans.disburse.create');
 Route::post('loans/{loan}/disburse', [C\LoanController::class, 'disburse'])->name('loans.disburse');
 Route::post('loans/{loan}/reverse-disbursement', [C\LoanController::class, 'reverseDisbursement'])->name('loans.reverse-disbursement');
+Route::post('loans/{loan}/write-off', [C\LoanController::class, 'writeOff'])->name('loans.write-off');
 Route::get('loans/{loan}/repayments/create', [C\LoanRepaymentController::class, 'create'])->name('loan-repayments.create');
 Route::post('loans/{loan}/repayments', [C\LoanRepaymentController::class, 'store'])->name('loan-repayments.store');
 Route::get('loan-repayments', [C\LoanRepaymentController::class, 'index'])->name('loan-repayments.index');

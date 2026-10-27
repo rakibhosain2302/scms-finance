@@ -14,11 +14,12 @@
                 @if ($next)<div class="fin-tile"><small>{{ __('Next installment (#:n, :date)', ['n' => $next->installment_no, 'date' => $next->due_date->format('j M')]) }}</small><strong>{{ $next->remaining()->format() }}</strong></div>@endif
                 <div class="fin-tile"><small>{{ __('Pays the loan off') }}</small><strong>{{ $payoff->format() }}</strong></div>
                 <div class="fin-tile"><small>{{ __('Principal outstanding') }}</small><strong>{{ $outstanding->format() }}</strong></div>
+                @if ($penaltyRule)<div class="fin-tile"><small>{{ __('Penalty owed (product rule)') }}</small><strong @class(['fin-neg' => $penaltyOwed->isPositive()])>{{ $penaltyOwed->format() }}</strong></div>@endif
             </div>
             <p class="nx-muted">{{ __('The payment goes to the oldest unpaid installments first, interest before principal. A penalty is taken first and booked as penalty income.') }}</p>
             <div class="nx-form-grid">
-                <x-nit::input name="amount" inputmode="decimal" :label="__('Amount received')" :value="$dueNow->isPositive() ? $dueNow->toString() : ($next ? $next->remaining()->toString() : '')" required autofocus />
-                <x-nit::input name="penalty_amount" inputmode="decimal" :label="__('Of which penalty')" value="0" :hint="__('Part of the amount above.')" />
+                <x-nit::input name="amount" inputmode="decimal" :label="__('Amount received')" :value="($dueNow->isPositive() ? $dueNow : ($next ? $next->remaining() : \SCMS\Finance\Support\Money::zero()))->plus($penaltyOwed)->toString()" required autofocus />
+                <x-nit::input name="penalty_amount" inputmode="decimal" :label="__('Of which penalty')" :value="$penaltyOwed->toString()" :hint="$penaltyRule ? __('Part of the amount above; at most :owed under the product rule (less waives the rest for now).', ['owed' => $penaltyOwed->format()]) : __('Part of the amount above.')" />
                 <x-nit::input name="repayment_date" type="date" :label="__('Date')" :value="today()->toDateString()" required />
                 <x-nit::select name="cash_bank_account_id" :label="__('Received into')" :options="$cashAccounts" required :placeholder="__('Choose…')" />
                 <x-nit::input name="reference" :label="__('Reference')" />

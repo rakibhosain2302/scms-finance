@@ -19,6 +19,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('test_members');
+        // Rolled back before the package's tables, whose member_id keys point here.
+        Schema::withoutForeignKeyConstraints(fn () => Schema::dropIfExists('test_members'));
     }
 };

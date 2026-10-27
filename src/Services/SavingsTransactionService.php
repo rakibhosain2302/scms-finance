@@ -18,6 +18,7 @@ use SCMS\Finance\Exceptions\InvalidStateException;
 use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\SavingsAccount;
 use SCMS\Finance\Models\SavingsTransaction;
+use SCMS\Finance\Support\AccountMap;
 use SCMS\Finance\Support\Money;
 
 /**
@@ -67,7 +68,7 @@ class SavingsTransactionService
             if ($transaction->status !== EntryStatus::Posted) {
                 throw new InvalidStateException(__(':number is :status.', ['number' => $transaction->number, 'status' => $transaction->status->label()]));
             }
-            if ($transaction->type === SavingsTransactionType::Deposit
+            if ($transaction->type !== SavingsTransactionType::Withdrawal
                 && $this->ledger->savingsBalance($account->id)->lessThan($transaction->amount)) {
                 throw new InsufficientBalanceException(__('The member has already withdrawn this deposit; the balance would go below zero.'));
             }
@@ -80,6 +81,72 @@ class SavingsTransactionService
         });
 
         event(new TransactionReversed($transaction, $reversal, $reason, $user?->getAuthIdentifier()));
+
+        return $transaction;
+    }
+
+    /**
+     * Credits interest earned (SavingsInterestService, inside its transaction):
+     *
+     *     Dr Interest on savings (expense)    Cr Member savings (sub-ledger: the savings account)
+     */
+    public function creditInterest(SavingsAccount $account, Money $amount, string $date, int $runId, ?Authenticatable $user): SavingsTransaction
+    {
+        return $this->creditWithoutCash(SavingsTransactionType::Interest, $account, $amount, $date, 'savings_interest_expense', LineComponent::SavingsInterest, $user, $runId);
+    }
+
+    /**
+     * The balance a member already had when the samiti started using the system (SavingsService::open):
+     *
+     *     Dr Opening balance equity    Cr Member savings (sub-ledger: the savings account)
+     */
+    public function creditOpeningBalance(SavingsAccount $account, Money $amount, string $date, ?Authenticatable $user): SavingsTransaction
+    {
+        return $this->creditWithoutCash(SavingsTransactionType::Opening, $account, $amount, $date, 'opening_balance_equity', LineComponent::Opening, $user);
+    }
+
+    /** A credit to the member's savings that moves no cash; $debitRole is the account of the other side. */
+    private function creditWithoutCash(SavingsTransactionType $type, SavingsAccount $account, Money $amount, string $date, string $debitRole, LineComponent $component, ?Authenticatable $user, ?int $runId = null): SavingsTransaction
+    {
+        if (! $amount->isPositive()) {
+            throw new FinanceException(__('The amount must be more than zero.'));
+        }
+
+        $account = $this->lockAccount($account->id, $user);
+        $debit = app(AccountMap::class)->get($debitRole);
+        $year = $this->years->openYearFor($date);
+        $number = $this->numbers->next($type->numberKey(), $date, (int) $account->branch_id);
+
+        $transaction = new SavingsTransaction(['description' => $type->label()]);
+        $transaction->forceFill([
+            'number' => $number,
+            'branch_id' => $account->branch_id,
+            'savings_account_id' => $account->id,
+            'financial_year_id' => $year->getKey(),
+            'type' => $type->value,
+            'transaction_date' => Carbon::parse($date)->toDateString(),
+            'amount' => $amount->toString(),
+            'savings_interest_run_id' => $runId,
+            'status' => EntryStatus::Posted->value,
+            'created_by' => $user?->getAuthIdentifier(),
+            'posted_by' => $user?->getAuthIdentifier(),
+            'posted_at' => now(),
+        ])->save();
+
+        $entry = $this->journal->record([
+            'branch_id' => $account->branch_id,
+            'entry_date' => $date,
+            'description' => $type->label().' · '.$account->account_number,
+            'source_type' => 'savings_transaction',
+            'source_id' => $transaction->id,
+            'number' => $number,
+        ], [
+            JournalService::debit($debit, $amount, ['member_id' => $account->member_id, 'component' => $component]),
+            JournalService::credit($account->scheme->liabilityAccount, $amount, ['savings_account_id' => $account->id, 'member_id' => $account->member_id, 'component' => $component]),
+        ], $user);
+
+        $transaction->forceFill(['journal_entry_id' => $entry->id])->save();
+        $this->refreshBalance($account);
 
         return $transaction;
     }

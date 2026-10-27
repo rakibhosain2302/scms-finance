@@ -10,6 +10,7 @@ use SCMS\Finance\Models\SavingsTransaction;
 use SCMS\Finance\Services\IncomeService;
 use SCMS\Finance\Services\ExpenseService;
 use SCMS\Finance\Services\FinancialYearService;
+use SCMS\Finance\Services\SavingsService;
 use SCMS\Finance\Services\SavingsTransactionService;
 use SCMS\Finance\Services\YearEndService;
 use SCMS\Finance\Support\Abilities;
@@ -65,6 +66,11 @@ class SecurityTest extends FinanceTestCase
             'branch_id' => $this->branchA->id, 'voucher_date' => today()->toDateString(), 'account_id' => $this->account('4100')->id,
             'cash_bank_account_id' => $this->cashA->id, 'amount' => '10', 'post' => '1',
         ])->assertRedirect();
+        // Saved as a draft: the writer may not post it (maker-checker); a second person does.
+        $this->assertSame('0.00', $this->balance('4100'));
+        $checker = $this->makeUser([Abilities::INCOME_VIEW, Abilities::INCOME_POST], [$this->branchA->id]);
+        $voucher = \SCMS\Finance\Models\Income::query()->withoutBranchScope()->latest('id')->firstOrFail();
+        $this->actingAs($checker)->post(route('finance.incomes.post', $voucher))->assertRedirect();
         $this->assertSame('10.00', $this->balance('4100'));
     }
 
@@ -84,7 +90,11 @@ class SecurityTest extends FinanceTestCase
     {
         $old = new FinancialYear(['name' => 'Closed', 'starts_on' => $this->year->starts_on->copy()->subYear(), 'ends_on' => $this->year->starts_on->copy()->subDay()]);
         $old->forceFill(['status' => YearStatus::Closed->value])->save();
-        $account = $this->openSavings();
+        // Opened in the old year, so only the closed year can refuse the deposit.
+        $account = app(SavingsService::class)->open([
+            'branch_id' => $this->branchA->id, 'member_id' => $this->memberA->id,
+            'savings_scheme_id' => $this->scheme()->id, 'opened_on' => $old->starts_on->toDateString(),
+        ], $this->superAdmin());
 
         $this->expectException(ClosedFinancialYearException::class);
         app(SavingsTransactionService::class)->deposit($account, ['amount' => '100', 'transaction_date' => $old->ends_on->toDateString(), 'cash_bank_account_id' => $this->cashA->id], $this->superAdmin());

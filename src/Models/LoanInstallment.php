@@ -14,7 +14,7 @@ class LoanInstallment extends FinanceModel
 
     protected $fillable = [];
 
-    protected array $money = ['principal_due', 'interest_due', 'principal_paid', 'interest_paid'];
+    protected array $money = ['principal_due', 'interest_due', 'principal_paid', 'interest_paid', 'penalty_charged'];
 
     protected function casts(): array
     {

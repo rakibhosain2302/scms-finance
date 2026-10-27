@@ -21,6 +21,7 @@ use SCMS\Finance\Exceptions\UnbalancedJournalException;
 use SCMS\Finance\Models\Account;
 use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\JournalEntry;
+use SCMS\Finance\Support\MakerChecker;
 use SCMS\Finance\Support\Money;
 
 /**
@@ -176,6 +177,7 @@ class JournalService
         $entry = DB::transaction(function () use ($entry, $user) {
             $entry = $this->lockManualDraft($entry);
             $this->assertBranch($user, $entry->branch_id);
+            MakerChecker::assertMayPost($user, $entry);
             $year = $this->years->openYearFor($entry->entry_date);
 
             $lines = $this->normalize($entry->lines()->get()->map(fn ($line) => $line->only([

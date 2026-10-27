@@ -49,6 +49,8 @@ class ChartOfAccountsSeeder extends Seeder
         ['5400', 'Electricity', 'expense', 'general', true, '5000'],
         ['5500', 'Transport', 'expense', 'general', true, '5000'],
         ['5600', 'Maintenance', 'expense', 'general', true, '5000'],
+        ['5700', 'Loan Loss (Write-off)', 'expense', 'general', true, '5000'],
+        ['5800', 'Interest on Savings', 'expense', 'general', true, '5000'],
         ['5900', 'Other Expense', 'expense', 'general', true, '5000'],
     ];
 

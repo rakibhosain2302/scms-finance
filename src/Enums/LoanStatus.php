@@ -4,7 +4,7 @@ namespace SCMS\Finance\Enums;
 
 /**
  * applied → approved → active (disbursed) → partially_paid → completed;
- * applied → rejected; applied / approved → cancelled.
+ * applied → rejected; applied / approved → cancelled; active / partially_paid → written_off.
  */
 enum LoanStatus: string
 {
@@ -15,12 +15,14 @@ enum LoanStatus: string
     case Active = 'active';
     case PartiallyPaid = 'partially_paid';
     case Completed = 'completed';
+    case WrittenOff = 'written_off';
 
     public function label(): string
     {
         return match ($this) {
             self::PartiallyPaid => __('Partially paid'),
             self::Active => __('Active (disbursed)'),
+            self::WrittenOff => __('Written off'),
             default => __(ucfirst($this->value)),
         };
     }
@@ -31,7 +33,7 @@ enum LoanStatus: string
             self::Applied => 'warning',
             self::Approved, self::Active, self::PartiallyPaid => 'primary',
             self::Completed => 'success',
-            self::Rejected => 'danger',
+            self::Rejected, self::WrittenOff => 'danger',
             self::Cancelled => 'neutral',
         };
     }

@@ -22,6 +22,7 @@
             @if ($loan->approved_at)<dt>{{ __('Approved') }}</dt><dd>{{ $loan->approved_at->format('j M Y') }} · {{ $loan->approver?->name }}</dd>@endif
             @if ($loan->disbursed_on)<dt>{{ __('Disbursed') }}</dt><dd>{{ $loan->disbursed_on->format('j M Y') }} · {{ $loan->disbursementAccount?->name }}@if ($loan->disbursementEntry) · <a href="{{ route('finance.journals.show', $loan->disbursementEntry) }}">{{ $loan->disbursementEntry->number }}</a>@endif</dd>@endif
             @if ($loan->closed_on)<dt>{{ __('Closed') }}</dt><dd>{{ $loan->closed_on->format('j M Y') }}</dd>@endif
+            @if ($loan->written_off_on)<dt>{{ __('Written off') }}</dt><dd>{{ $loan->written_off_on->format('j M Y') }}@if ($loan->writeOffEntry) · <a href="{{ route('finance.journals.show', $loan->writeOffEntry) }}">{{ $loan->writeOffEntry->number }}</a>@endif · {{ $loan->write_off_reason }}</dd>@endif
             @if ($loan->purpose)<dt>{{ __('Purpose') }}</dt><dd>{{ $loan->purpose }}</dd>@endif
             @if ($loan->decision_note)<dt>{{ __('Note') }}</dt><dd>{{ $loan->decision_note }}</dd>@endif
         </dl>
@@ -39,6 +40,9 @@
             @endcan
             @can('reverseDisbursement', $loan)
                 @include('finance::partials.reverse', ['action' => route('finance.loans.reverse-disbursement', $loan), 'label' => $loan->loan_number, 'button' => __('Reverse disbursement'), 'text' => __('Only possible before any repayment. The disbursement entry is reversed and the loan cancelled.')])
+            @endcan
+            @can('writeOff', $loan)
+                @include('finance::partials.write-off', ['loan' => $loan, 'outstanding' => $outstanding])
             @endcan
             @can('repay', $loan)
                 <x-nit::button :href="route('finance.loan-repayments.create', $loan)" icon="fas fa-hand-holding-usd">{{ __('Take repayment') }}</x-nit::button>

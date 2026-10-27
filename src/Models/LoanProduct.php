@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use SCMS\Finance\Enums\Frequency;
 use SCMS\Finance\Enums\InterestMethod;
+use SCMS\Finance\Enums\PenaltyType;
 use SCMS\Finance\Models\Concerns\HasCreator;
 
 /** Loan terms and the accounts loans of this product post to. */
@@ -18,7 +19,7 @@ class LoanProduct extends FinanceModel
 
     protected $fillable = [
         'code', 'name', 'interest_method', 'interest_rate', 'repayment_frequency', 'min_installments', 'max_installments',
-        'min_amount', 'max_amount', 'processing_fee_rate', 'grace_days', 'receivable_account_id',
+        'min_amount', 'max_amount', 'processing_fee_rate', 'grace_days', 'penalty_type', 'penalty_value', 'receivable_account_id',
         'interest_income_account_id', 'penalty_income_account_id', 'fee_income_account_id', 'is_active', 'description',
     ];
 
@@ -31,6 +32,8 @@ class LoanProduct extends FinanceModel
             'repayment_frequency' => Frequency::class,
             'interest_rate' => 'decimal:4',
             'processing_fee_rate' => 'decimal:4',
+            'penalty_type' => PenaltyType::class,
+            'penalty_value' => 'decimal:4',
             'is_active' => 'boolean',
         ];
     }

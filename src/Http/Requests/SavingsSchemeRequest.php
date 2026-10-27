@@ -5,9 +5,15 @@ namespace SCMS\Finance\Http\Requests;
 use Illuminate\Validation\Rule;
 use SCMS\Finance\Enums\AccountSubtype;
 use SCMS\Finance\Enums\Frequency;
+use SCMS\Finance\Support\Abilities;
 
 class SavingsSchemeRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::SAVINGS_MANAGE;
+    }
+
     public function rules(): array
     {
         return [

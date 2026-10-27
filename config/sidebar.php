@@ -15,6 +15,7 @@ return [
         ['title' => 'Savings accounts', 'route' => 'finance.savings-accounts.index', 'permission' => A::SAVINGS_VIEW],
         ['title' => 'Deposits & withdrawals', 'route' => 'finance.savings-transactions.index', 'permission' => A::SAVINGS_VIEW],
         ['title' => 'Savings schemes', 'route' => 'finance.savings-schemes.index', 'permission' => A::SAVINGS_MANAGE],
+        ['title' => 'Interest on savings', 'route' => 'finance.savings-interest.create', 'permission' => A::SAVINGS_INTEREST],
     ]],
     ['sl' => 3, 'title' => 'Loans', 'icon' => 'fas fa-hand-holding-usd', 'children' => [
         ['title' => 'Loans', 'route' => 'finance.loans.index', 'permission' => A::LOAN_VIEW],
@@ -27,6 +28,7 @@ return [
     ]],
     ['sl' => 5, 'title' => 'Cash & bank', 'icon' => 'fas fa-university', 'children' => [
         ['title' => 'Cash & bank accounts', 'route' => 'finance.cash-bank.index', 'permission' => A::CASHBANK_VIEW],
+        ['title' => 'Bank reconciliation', 'route' => 'finance.reconciliations.index', 'permission' => A::CASHBANK_RECONCILE],
         ['title' => 'Transfers', 'route' => 'finance.transfers.index', 'permission' => A::TRANSFER_VIEW],
     ]],
     ['sl' => 6, 'title' => 'Accounting', 'icon' => 'fas fa-book', 'children' => [

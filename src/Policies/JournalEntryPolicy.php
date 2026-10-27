@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use SCMS\Finance\Enums\EntryStatus;
 use SCMS\Finance\Models\JournalEntry;
 use SCMS\Finance\Support\Abilities;
+use SCMS\Finance\Support\MakerChecker;
 
 class JournalEntryPolicy extends FinancePolicy
 {
@@ -21,7 +22,7 @@ class JournalEntryPolicy extends FinancePolicy
 
     public function post(Authenticatable $user, JournalEntry $entry): bool
     {
-        return $entry->isManual() && $entry->status === EntryStatus::Draft && $this->allows($user, Abilities::JOURNAL_POST, $entry);
+        return $entry->isManual() && $entry->status === EntryStatus::Draft && $this->allows($user, Abilities::JOURNAL_POST, $entry) && MakerChecker::mayPost($user, $entry);
     }
 
     public function reverse(Authenticatable $user, JournalEntry $entry): bool

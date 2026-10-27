@@ -17,4 +17,7 @@ enum LineComponent: string
     case Payment = 'payment';
     case Opening = 'opening';
     case Closing = 'closing';
+    case WriteOff = 'write_off';
+    // Interest credited to a savings account (kept apart from loan interest income).
+    case SavingsInterest = 'savings_interest';
 }

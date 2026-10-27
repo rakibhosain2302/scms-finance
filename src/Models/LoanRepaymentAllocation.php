@@ -8,9 +8,9 @@ class LoanRepaymentAllocation extends FinanceModel
 {
     protected $table = 'finance_loan_repayment_allocations';
 
-    protected $fillable = ['loan_installment_id', 'principal', 'interest'];
+    protected $fillable = ['loan_installment_id', 'principal', 'interest', 'penalty'];
 
-    protected array $money = ['principal', 'interest'];
+    protected array $money = ['principal', 'interest', 'penalty'];
 
     public function installment(): BelongsTo
     {

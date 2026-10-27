@@ -5,9 +5,15 @@ namespace SCMS\Finance\Http\Requests;
 use Illuminate\Validation\Rule;
 use SCMS\Finance\Enums\AccountSubtype;
 use SCMS\Finance\Enums\AccountType;
+use SCMS\Finance\Support\Abilities;
 
 class AccountRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::ACCOUNT_MANAGE;
+    }
+
     public function rules(): array
     {
         $id = $this->route('account')?->id;

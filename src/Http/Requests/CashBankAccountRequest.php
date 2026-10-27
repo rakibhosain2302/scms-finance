@@ -4,9 +4,15 @@ namespace SCMS\Finance\Http\Requests;
 
 use Illuminate\Validation\Rule;
 use SCMS\Finance\Enums\CashBankKind;
+use SCMS\Finance\Support\Abilities;
 
 class CashBankAccountRequest extends FinanceRequest
 {
+    protected function ability(): ?string
+    {
+        return Abilities::CASHBANK_MANAGE;
+    }
+
     public function rules(): array
     {
         $creating = $this->isMethod('post');

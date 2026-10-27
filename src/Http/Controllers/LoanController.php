@@ -99,7 +99,7 @@ class LoanController extends Controller
         $this->authorizeAbility('view', $loan);
 
         return $this->view('loans.show', [
-            'loan' => $loan->load(['product', 'branch', 'creator', 'approver', 'installments', 'repayments.cashBankAccount', 'disbursementAccount', 'disbursementEntry']),
+            'loan' => $loan->load(['product', 'branch', 'creator', 'approver', 'installments', 'repayments.cashBankAccount', 'disbursementAccount', 'disbursementEntry', 'writeOffEntry']),
             'member' => $loan->memberLabel(),
             'outstanding' => $ledger->loanOutstanding($loan->id),
         ]);
@@ -111,6 +111,17 @@ class LoanController extends Controller
         $note = $request->validate(['note' => ['nullable', 'string', 'max:500']])['note'] ?? null;
 
         return $this->attempt(fn () => $this->loans->approve($loan, $request->user(), $note), fn () => $this->back($loan, __('Loan approved.')));
+    }
+
+    public function writeOff(ReasonRequest $request, Loan $loan)
+    {
+        $this->authorizeAbility('writeOff', $loan);
+        $date = $request->validate(['written_off_on' => ['required', 'date', 'before_or_equal:today']])['written_off_on'];
+
+        return $this->attempt(
+            fn () => $this->loans->writeOff($loan, ['written_off_on' => $date, 'reason' => $request->validated('reason')], $request->user()),
+            fn () => $this->back($loan, __('Loan written off.')),
+        );
     }
 
     public function reject(ReasonRequest $request, Loan $loan)

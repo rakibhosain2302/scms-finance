@@ -35,6 +35,11 @@ class LoanPolicy extends FinancePolicy
         return $loan->status->isRunning() && $this->allows($user, Abilities::LOAN_REPAY, $loan);
     }
 
+    public function writeOff(Authenticatable $user, Loan $loan): bool
+    {
+        return $loan->status->isRunning() && $this->allows($user, Abilities::LOAN_WRITE_OFF, $loan);
+    }
+
     public function reverseDisbursement(Authenticatable $user, Loan $loan): bool
     {
         return $loan->status === LoanStatus::Active && $this->allows($user, Abilities::REVERSE, $loan);

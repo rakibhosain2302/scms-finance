@@ -43,7 +43,7 @@ class SavingsTransactionController extends Controller
 
     public function create(Request $request, LedgerService $ledger)
     {
-        $type = SavingsTransactionType::tryFrom((string) $request->query('type')) ?? SavingsTransactionType::Deposit;
+        $type = $request->query('type') === SavingsTransactionType::Withdrawal->value ? SavingsTransactionType::Withdrawal : SavingsTransactionType::Deposit;
         $this->authorizeAbility($type === SavingsTransactionType::Deposit ? Abilities::SAVINGS_DEPOSIT : Abilities::SAVINGS_WITHDRAW);
 
         $account = $request->query('account') ? SavingsAccount::query()->with('scheme')->find($request->query('account')) : null;

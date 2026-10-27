@@ -79,9 +79,15 @@ abstract class DatabaseTestCase extends TestCase
         $this->memberB = Member::query()->create(['member_no' => 'B-1', 'name' => 'Karim', 'branch_id' => $this->branchB->id]);
     }
 
-    protected function defineDatabaseMigrations(): void
+    /**
+     * The fixture table is created once with the package's tables (migrate:fresh), not per test:
+     * on MySQL a CREATE TABLE inside RefreshDatabase's transaction commits it, and the test's rows
+     * would then stay behind for the next test.
+     */
+    protected function defineEnvironment($app): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/Fixtures/migrations');
+        parent::defineEnvironment($app);
+        $app->afterResolving('migrator', fn ($migrator) => $migrator->path(__DIR__.'/Fixtures/migrations'));
     }
 
     protected function superAdmin(): User

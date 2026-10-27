@@ -22,6 +22,7 @@ final class Abilities
 
     public const CASHBANK_VIEW = 'finance_cashbank_view';
     public const CASHBANK_MANAGE = 'finance_cashbank_manage';
+    public const CASHBANK_RECONCILE = 'finance_cashbank_reconcile';
     public const TRANSFER_VIEW = 'finance_transfer_view';
     public const TRANSFER_CREATE = 'finance_transfer_create';
     public const TRANSFER_POST = 'finance_transfer_post';
@@ -30,6 +31,8 @@ final class Abilities
     public const SAVINGS_MANAGE = 'finance_savings_manage';
     public const SAVINGS_DEPOSIT = 'finance_savings_deposit';
     public const SAVINGS_WITHDRAW = 'finance_savings_withdraw';
+    public const SAVINGS_INTEREST = 'finance_savings_interest';
+    public const SAVINGS_OPENING = 'finance_savings_opening';
 
     public const LOAN_VIEW = 'finance_loan_view';
     public const LOAN_PRODUCT_MANAGE = 'finance_loan_product_manage';
@@ -37,6 +40,7 @@ final class Abilities
     public const LOAN_APPROVE = 'finance_loan_approve';
     public const LOAN_DISBURSE = 'finance_loan_disburse';
     public const LOAN_REPAY = 'finance_loan_repay';
+    public const LOAN_WRITE_OFF = 'finance_loan_write_off';
 
     public const INCOME_VIEW = 'finance_income_view';
     public const INCOME_CREATE = 'finance_income_create';
@@ -71,6 +75,7 @@ final class Abilities
                 'icon' => 'fa-university',
                 self::CASHBANK_VIEW => 'View cash and bank accounts',
                 self::CASHBANK_MANAGE => 'Add and change cash and bank accounts',
+                self::CASHBANK_RECONCILE => 'Reconcile bank statements',
                 self::TRANSFER_VIEW => 'View transfers',
                 self::TRANSFER_CREATE => 'Write transfers',
                 self::TRANSFER_POST => 'Post transfers',
@@ -81,6 +86,8 @@ final class Abilities
                 self::SAVINGS_MANAGE => 'Manage savings schemes and open or close accounts',
                 self::SAVINGS_DEPOSIT => 'Take savings deposits',
                 self::SAVINGS_WITHDRAW => 'Pay savings withdrawals',
+                self::SAVINGS_INTEREST => 'Post interest on savings',
+                self::SAVINGS_OPENING => 'Enter opening balances of savings accounts (go-live)',
             ],
             'Finance: Loans' => [
                 'icon' => 'fa-hand-holding-usd',
@@ -90,6 +97,7 @@ final class Abilities
                 self::LOAN_APPROVE => 'Approve or reject loan applications',
                 self::LOAN_DISBURSE => 'Disburse loans',
                 self::LOAN_REPAY => 'Take loan repayments',
+                self::LOAN_WRITE_OFF => 'Write off loans',
             ],
             'Finance: Income & Expense' => [
                 'icon' => 'fa-receipt',

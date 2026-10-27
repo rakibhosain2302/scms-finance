@@ -10,6 +10,7 @@ use SCMS\Finance\Models\CashBankAccount;
 use SCMS\Finance\Models\Transfer;
 use SCMS\Finance\Services\TransferService;
 use SCMS\Finance\Support\Abilities;
+use SCMS\Finance\Support\MakerChecker;
 
 class TransferController extends Controller
 {
@@ -40,7 +41,7 @@ class TransferController extends Controller
     public function store(TransferRequest $request)
     {
         $this->authorizeAbility(Abilities::TRANSFER_CREATE);
-        $post = $request->boolean('post') && $request->user()->can(Abilities::TRANSFER_POST);
+        $post = $request->boolean('post') && $request->user()->can(Abilities::TRANSFER_POST) && MakerChecker::selfPostingAllowed($request->user());
 
         return $this->attempt(
             fn () => $this->transfers->create($request->validated(), $post, $request->user()),
@@ -109,7 +110,7 @@ class TransferController extends Controller
             'branches' => $this->branchOptions(),
             'branch' => $branch,
             'cashAccounts' => CashBankAccount::options($branch),
-            'canPost' => auth()->user()->can(Abilities::TRANSFER_POST),
+            'canPost' => auth()->user()->can(Abilities::TRANSFER_POST) && MakerChecker::selfPostingAllowed(auth()->user()),
         ];
     }
 }
