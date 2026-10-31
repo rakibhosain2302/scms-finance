@@ -99,7 +99,7 @@ class LoanController extends Controller
         $this->authorizeAbility('view', $loan);
 
         return $this->view('loans.show', [
-            'loan' => $loan->load(['product', 'branch', 'creator', 'approver', 'installments', 'repayments.cashBankAccount', 'disbursementAccount', 'disbursementEntry', 'writeOffEntry']),
+            'loan' => $loan->load(['product', 'branch', 'creator', 'approver', 'installments', 'repayments.cashBankAccount', 'disbursementAccount', 'disbursementEntry', 'writeOffEntry', 'guarantors', 'recoveries']),
             'member' => $loan->memberLabel(),
             'outstanding' => $ledger->loanOutstanding($loan->id),
         ]);

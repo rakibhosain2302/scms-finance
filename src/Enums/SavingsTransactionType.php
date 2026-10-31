@@ -10,6 +10,8 @@ enum SavingsTransactionType: string
     case Interest = 'interest';
     // A balance brought in when the account was opened (go-live); moves no cash.
     case Opening = 'opening';
+    // Dividend on share capital (DividendService); moves no cash.
+    case Dividend = 'dividend';
 
     public function label(): string
     {
@@ -23,6 +25,7 @@ enum SavingsTransactionType: string
             self::Withdrawal => 'savings_withdrawal',
             self::Interest => 'savings_interest',
             self::Opening => 'opening_balance',
+            self::Dividend => 'dividend',
         };
     }
 

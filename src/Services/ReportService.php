@@ -11,13 +11,19 @@ use Illuminate\Support\Facades\DB;
 use SCMS\Finance\Contracts\BranchAccess;
 use SCMS\Finance\Enums\AccountType;
 use SCMS\Finance\Enums\CashBankKind;
+use SCMS\Finance\Enums\EntryStatus;
+use SCMS\Finance\Enums\Frequency;
 use SCMS\Finance\Enums\InstallmentStatus;
 use SCMS\Finance\Enums\LineComponent;
 use SCMS\Finance\Enums\LoanStatus;
+use SCMS\Finance\Enums\SavingsAccountStatus;
+use SCMS\Finance\Enums\SavingsTransactionType;
 use SCMS\Finance\Exceptions\BranchAccessException;
 use SCMS\Finance\Models\Account;
 use SCMS\Finance\Models\Loan;
+use SCMS\Finance\Models\SavingsAccount;
 use SCMS\Finance\Models\SavingsScheme;
+use SCMS\Finance\Models\SavingsTransaction;
 use SCMS\Finance\Support\Abilities;
 use SCMS\Finance\Support\FinanceModels;
 use SCMS\Finance\Support\Money;
@@ -269,6 +275,91 @@ class ReportService
         }
 
         return ['rows' => $rows, 'total' => Money::sum(array_column($rows, 'balance'))];
+    }
+
+    /**
+     * Receipts and payments of cash and bank for a period, by the account on the other side:
+     * opening + receipts − payments = closing. Moves between cash and bank are neither.
+     *
+     * @param  list<int>|null  $branchIds
+     * @return array{opening: Money, closing: Money, receipts: list<array{account: Account, amount: Money}>, payments: list<array{account: Account, amount: Money}>, total_receipts: Money, total_payments: Money}
+     */
+    public function receiptsAndPayments(?array $branchIds, DateTimeInterface|string $from, DateTimeInterface|string $to): array
+    {
+        $cash = fn ($asOf) => $this->ledger->net($this->ledger->lines($branchIds, null, $asOf)->whereNotNull('l.cash_bank_account_id'));
+        $rows = $this->ledger->lines($branchIds, $from, $to)
+            ->whereNull('l.cash_bank_account_id')
+            ->whereExists(fn ($q) => $q->selectRaw('1')->from('finance_journal_lines as c')->whereColumn('c.journal_entry_id', 'l.journal_entry_id')->whereNotNull('c.cash_bank_account_id'))
+            ->groupBy('l.account_id')
+            ->selectRaw('l.account_id, SUM(l.credit) as received, SUM(l.debit) as paid')
+            ->get();
+        $accounts = Account::query()->whereKey($rows->pluck('account_id')->all())->get()->keyBy('id');
+
+        $receipts = [];
+        $payments = [];
+        foreach ($rows->sortBy(fn ($r) => $accounts[$r->account_id]->code) as $row) {
+            if (Money::of((string) $row->received)->isPositive()) {
+                $receipts[] = ['account' => $accounts[$row->account_id], 'amount' => Money::of((string) $row->received)];
+            }
+            if (Money::of((string) $row->paid)->isPositive()) {
+                $payments[] = ['account' => $accounts[$row->account_id], 'amount' => Money::of((string) $row->paid)];
+            }
+        }
+
+        return [
+            'opening' => $cash(Carbon::parse($from)->subDay()),
+            'closing' => $cash($to),
+            'receipts' => $receipts,
+            'payments' => $payments,
+            'total_receipts' => Money::sum(array_column($receipts, 'amount')),
+            'total_payments' => Money::sum(array_column($payments, 'amount')),
+        ];
+    }
+
+    /**
+     * Regular savings that fell behind: for every active account of a daily, weekly or monthly scheme,
+     * the deposits expected from max(opened, from) to $to (one regular deposit per period) against
+     * the deposits made. Only accounts in arrears are returned, the largest first.
+     *
+     * @param  list<int>|null  $branchIds
+     * @return list<array{account: SavingsAccount, periods: int, expected: Money, deposited: Money, arrears: Money}>
+     */
+    public function savingsDues(?array $branchIds, DateTimeInterface|string $from, DateTimeInterface|string $to): array
+    {
+        $from = Carbon::parse($from)->startOfDay();
+        $to = Carbon::parse($to)->startOfDay();
+        $accounts = SavingsAccount::query()->withoutBranchScope()->forBranches($branchIds)
+            ->with('scheme')
+            ->where('status', SavingsAccountStatus::Active->value)
+            ->whereHas('scheme', fn ($q) => $q->whereIn('frequency', [Frequency::Daily->value, Frequency::Weekly->value, Frequency::Monthly->value]))
+            ->whereDate('opened_on', '<=', $to->toDateString())
+            ->get();
+
+        $deposits = SavingsTransaction::query()->withoutBranchScope()
+            ->whereIn('savings_account_id', $accounts->pluck('id'))
+            ->where('type', SavingsTransactionType::Deposit->value)
+            ->where('status', EntryStatus::Posted->value)
+            ->whereDate('transaction_date', '<=', $to->toDateString())
+            ->get(['savings_account_id', 'transaction_date', 'amount']);
+
+        $rows = [];
+        foreach ($accounts as $account) {
+            $start = $account->opened_on->copy()->max($from);
+            $periods = 0;
+            for ($due = $start->copy(); $due->lte($to) && $periods < 5000; $due = $account->scheme->frequency->advance($due)) {
+                $periods++;
+            }
+            $expected = Money::of($account->installment_amount ?? $account->scheme->min_deposit)->times($periods);
+            $deposited = Money::sum($deposits->where('savings_account_id', $account->id)
+                ->filter(fn ($d) => $d->transaction_date->gte($start))->pluck('amount')->all());
+            $arrears = $expected->minus($deposited);
+            if ($arrears->isPositive()) {
+                $rows[] = ['account' => $account, 'periods' => $periods, 'expected' => $expected, 'deposited' => $deposited, 'arrears' => $arrears];
+            }
+        }
+        usort($rows, fn ($a, $b) => $b['arrears']->compareTo($a['arrears']));
+
+        return $rows;
     }
 
     /**

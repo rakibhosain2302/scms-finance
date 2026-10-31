@@ -34,6 +34,7 @@ class LoanProductRequest extends FinanceRequest
             'processing_fee_rate' => $this->rateRule(),
             'grace_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'penalty_type' => ['required', Rule::enum(PenaltyType::class)],
+            'guarantors_required' => ['nullable', 'integer', 'min:0', 'max:5'],
             'penalty_value' => ['required_unless:penalty_type,none', 'nullable', 'decimal:0,4', 'gte:0', 'max:9999999999'],
             'receivable_account_id' => $account('subtype', AccountSubtype::LoanReceivable->value),
             'interest_income_account_id' => $account('type', AccountType::Income->value),
@@ -51,6 +52,7 @@ class LoanProductRequest extends FinanceRequest
             $data['interest_rate'] = ($data['interest_method'] ?? null) === InterestMethod::None->value ? '0' : ($data['interest_rate'] ?? '0');
             $data['processing_fee_rate'] ??= '0';
             $data['grace_days'] ??= 0;
+            $data['guarantors_required'] ??= 0;
             $data['penalty_value'] = ($data['penalty_type'] ?? null) === PenaltyType::None->value ? '0' : ($data['penalty_value'] ?? '0');
         }
 

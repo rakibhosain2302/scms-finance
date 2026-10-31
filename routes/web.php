@@ -34,11 +34,20 @@ Route::post('savings-accounts/{savingsAccount}/status', [C\SavingsAccountControl
 Route::resource('savings-transactions', C\SavingsTransactionController::class)->only(['index', 'create', 'store', 'show'])->parameters(['savings-transactions' => 'savingsTransaction']);
 Route::post('savings-transactions/{savingsTransaction}/reverse', [C\SavingsTransactionController::class, 'reverse'])->name('savings-transactions.reverse');
 Route::get('savings-interest', [C\SavingsInterestController::class, 'create'])->name('savings-interest.create');
+Route::get('dividends', [C\DividendController::class, 'create'])->name('dividends.create');
+Route::post('dividends', [C\DividendController::class, 'store'])->name('dividends.store');
 Route::post('savings-interest', [C\SavingsInterestController::class, 'store'])->name('savings-interest.store');
+
+// Share capital
+Route::resource('shares', C\ShareController::class)->only(['index', 'create', 'store', 'show']);
+Route::post('shares/{share}/reverse', [C\ShareController::class, 'reverse'])->name('shares.reverse');
 
 // Loans
 Route::resource('loan-products', C\LoanProductController::class)->except(['show', 'destroy'])->parameters(['loan-products' => 'loanProduct']);
 Route::get('loans/preview', [C\LoanController::class, 'preview'])->name('loans.preview');
+Route::get('loans/import', [C\LoanAdjustmentController::class, 'importForm'])->name('loans.import');
+Route::post('loans/import', [C\LoanAdjustmentController::class, 'import'])->name('loans.import.store');
+Route::post('loans/import/csv', [C\LoanAdjustmentController::class, 'importCsv'])->name('loans.import.csv');
 Route::resource('loans', C\LoanController::class)->only(['index', 'create', 'store', 'show']);
 Route::post('loans/{loan}/approve', [C\LoanController::class, 'approve'])->name('loans.approve');
 Route::post('loans/{loan}/reject', [C\LoanController::class, 'reject'])->name('loans.reject');
@@ -47,6 +56,10 @@ Route::get('loans/{loan}/disburse', [C\LoanController::class, 'disburseForm'])->
 Route::post('loans/{loan}/disburse', [C\LoanController::class, 'disburse'])->name('loans.disburse');
 Route::post('loans/{loan}/reverse-disbursement', [C\LoanController::class, 'reverseDisbursement'])->name('loans.reverse-disbursement');
 Route::post('loans/{loan}/write-off', [C\LoanController::class, 'writeOff'])->name('loans.write-off');
+Route::post('loans/{loan}/reschedule', [C\LoanAdjustmentController::class, 'reschedule'])->name('loans.reschedule');
+Route::post('loans/{loan}/waive', [C\LoanAdjustmentController::class, 'waive'])->name('loans.waive');
+Route::post('loans/{loan}/recoveries', [C\LoanAdjustmentController::class, 'recover'])->name('loans.recover');
+Route::post('loan-recoveries/{recovery}/reverse', [C\LoanAdjustmentController::class, 'reverseRecovery'])->name('loan-recoveries.reverse');
 Route::get('loans/{loan}/repayments/create', [C\LoanRepaymentController::class, 'create'])->name('loan-repayments.create');
 Route::post('loans/{loan}/repayments', [C\LoanRepaymentController::class, 'store'])->name('loan-repayments.store');
 Route::get('loan-repayments', [C\LoanRepaymentController::class, 'index'])->name('loan-repayments.index');
@@ -72,5 +85,7 @@ Route::prefix('reports')->name('reports.')->controller(C\ReportController::class
     Route::get('balance-sheet', 'balanceSheet')->name('balance-sheet');
     Route::get('loans', 'loans')->name('loans');
     Route::get('savings', 'savings')->name('savings');
+    Route::get('savings-dues', 'savingsDues')->name('savings-dues');
+    Route::get('receipts-payments', 'receiptsPayments')->name('receipts-payments');
     Route::get('branches', 'branches')->name('branches');
 });

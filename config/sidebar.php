@@ -16,9 +16,12 @@ return [
         ['title' => 'Deposits & withdrawals', 'route' => 'finance.savings-transactions.index', 'permission' => A::SAVINGS_VIEW],
         ['title' => 'Savings schemes', 'route' => 'finance.savings-schemes.index', 'permission' => A::SAVINGS_MANAGE],
         ['title' => 'Interest on savings', 'route' => 'finance.savings-interest.create', 'permission' => A::SAVINGS_INTEREST],
+        ['title' => 'Dividend on shares', 'route' => 'finance.dividends.create', 'permission' => A::DIVIDEND_POST],
     ]],
+    ['sl' => 2.5, 'title' => 'Share capital', 'icon' => 'fas fa-certificate', 'route' => 'finance.shares.index', 'permission' => A::SHARE_VIEW],
     ['sl' => 3, 'title' => 'Loans', 'icon' => 'fas fa-hand-holding-usd', 'children' => [
         ['title' => 'Loans', 'route' => 'finance.loans.index', 'permission' => A::LOAN_VIEW],
+        ['title' => 'Bring in running loans', 'route' => 'finance.loans.import', 'permission' => A::LOAN_IMPORT],
         ['title' => 'Repayments', 'route' => 'finance.loan-repayments.index', 'permission' => A::LOAN_VIEW],
         ['title' => 'Loan products', 'route' => 'finance.loan-products.index', 'permission' => A::LOAN_PRODUCT_MANAGE],
     ]],

@@ -24,6 +24,10 @@
             @if ($loan->closed_on)<dt>{{ __('Closed') }}</dt><dd>{{ $loan->closed_on->format('j M Y') }}</dd>@endif
             @if ($loan->written_off_on)<dt>{{ __('Written off') }}</dt><dd>{{ $loan->written_off_on->format('j M Y') }}@if ($loan->writeOffEntry) · <a href="{{ route('finance.journals.show', $loan->writeOffEntry) }}">{{ $loan->writeOffEntry->number }}</a>@endif · {{ $loan->write_off_reason }}</dd>@endif
             @if ($loan->purpose)<dt>{{ __('Purpose') }}</dt><dd>{{ $loan->purpose }}</dd>@endif
+            @if ($loan->collateral)<dt>{{ __('Collateral') }}</dt><dd>{{ $loan->collateral }}</dd>@endif
+            @if ($loan->imported)<dt>{{ __('Brought in at go-live') }}</dt><dd>{{ __('Still owed then: :owed', ['owed' => \SCMS\Finance\Support\Money::of($loan->principal)->format()]) }}@if ($loan->original_principal) · {{ __('lent: :lent', ['lent' => \SCMS\Finance\Support\Money::of($loan->original_principal)->format()]) }}@endif @if ($loan->opening_reference) · {{ $loan->opening_reference }}@endif</dd>@endif
+            @if ($loan->rescheduled_at)<dt>{{ __('Rescheduled') }}</dt><dd>{{ $loan->rescheduled_at->format('j M Y') }} · {{ $loan->reschedule_note }}</dd>@endif
+            @if ($loan->guarantors->isNotEmpty())<dt>{{ __('Guarantors') }}</dt><dd>{{ $loan->guarantors->map(fn ($g) => $g->name.($g->relation ? ' ('.$g->relation.')' : '').($g->phone ? ' · '.$g->phone : ''))->join('; ') }}</dd>@endif
             @if ($loan->decision_note)<dt>{{ __('Note') }}</dt><dd>{{ $loan->decision_note }}</dd>@endif
         </dl>
         <x-slot:footer>
@@ -40,6 +44,15 @@
             @endcan
             @can('reverseDisbursement', $loan)
                 @include('finance::partials.reverse', ['action' => route('finance.loans.reverse-disbursement', $loan), 'label' => $loan->loan_number, 'button' => __('Reverse disbursement'), 'text' => __('Only possible before any repayment. The disbursement entry is reversed and the loan cancelled.')])
+            @endcan
+            @can('reschedule', $loan)
+                @include('finance::loans.partials.reschedule', ['loan' => $loan])
+            @endcan
+            @can('waive', $loan)
+                @include('finance::loans.partials.waive', ['loan' => $loan])
+            @endcan
+            @can('recover', $loan)
+                @include('finance::loans.partials.recover', ['loan' => $loan])
             @endcan
             @can('writeOff', $loan)
                 @include('finance::partials.write-off', ['loan' => $loan, 'outstanding' => $outstanding])
@@ -77,6 +90,23 @@
                 </tfoot>
             </table>
         </div>
+    </x-nit::card>
+    @endif
+
+    @if ($loan->recoveries->isNotEmpty())
+    <x-nit::card :title="__('Recoveries after write-off')" class="mt-5" :padding="false">
+        <div class="table-responsive"><table class="nx-tbl">
+            <thead><tr><th>{{ __('Number') }}</th><th>{{ __('Date') }}</th><th class="fin-num">{{ __('Amount') }}</th><th>{{ __('Status') }}</th><th></th></tr></thead>
+            <tbody>
+                @foreach ($loan->recoveries as $r)
+                    <tr>
+                        <td>{{ $r->number }}</td><td>{{ $r->recovery_date->format('j M Y') }}</td><td class="fin-num">@finmoney($r->amount)</td>
+                        <td>@include('finance::partials.status', ['status' => $r->status])</td>
+                        <td class="text-end">@if ($r->isPosted()) @can(\SCMS\Finance\Support\Abilities::REVERSE) @include('finance::partials.reverse', ['action' => route('finance.loan-recoveries.reverse', $r), 'label' => $r->number]) @endcan @endif</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table></div>
     </x-nit::card>
     @endif
 

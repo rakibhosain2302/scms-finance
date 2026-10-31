@@ -52,7 +52,7 @@ class SCMSFinanceServiceProvider extends ServiceProvider
             $this->publishes([__DIR__.'/../config/scms-finance.php' => config_path('scms-finance.php')], 'scms-finance-config');
             $this->publishes([__DIR__.'/../resources/views' => resource_path('views/vendor/finance')], 'scms-finance-views');
             $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], 'scms-finance-migrations');
-            $this->commands([Console\InstallCommand::class, Console\RebuildBalancesCommand::class]);
+            $this->commands([Console\InstallCommand::class, Console\RebuildBalancesCommand::class, Console\LoanRemindersCommand::class]);
         }
 
         Gate::policy(Models\JournalEntry::class, Policies\JournalEntryPolicy::class);
@@ -64,8 +64,19 @@ class SCMSFinanceServiceProvider extends ServiceProvider
         Gate::policy(Models\Voucher::class, Policies\VoucherPolicy::class);
         Gate::policy(Models\Transfer::class, Policies\TransferPolicy::class);
 
+        // Large withdrawals approved on nit-master's Approvals page are posted by the approver.
+        if (class_exists(\Nit\Master\Support\Approvals::class)) {
+            \Nit\Master\Support\Approvals::handler('finance_withdrawal', 'post', function ($approval) {
+                $account = Models\SavingsAccount::query()->withoutBranchScope()->findOrFail($approval->payload['savings_account_id']);
+                app(Services\SavingsTransactionService::class)->withdraw($account, $approval->payload, auth()->user());
+            });
+        }
+
         foreach (self::LOGGED_EVENTS as $event) {
             Event::listen($event, Listeners\LogFinanceActivity::class);
+        }
+        foreach ([Events\DepositPosted::class, Events\WithdrawalPosted::class, Events\LoanRepaymentPosted::class, Events\LoanDisbursed::class] as $event) {
+            Event::listen($event, Listeners\SendMemberSms::class);
         }
 
         // @finmoney($amount): exact decimal, formatted (Bangla digits through nit-master in Bangla).

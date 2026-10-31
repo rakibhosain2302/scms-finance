@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('member_no')->unique();
             $table->string('name');
             $table->unsignedBigInteger('branch_id');
+            $table->string('phone', 20)->nullable();
             $table->timestamps();
         });
     }

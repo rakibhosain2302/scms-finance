@@ -17,6 +17,11 @@
                 <x-nit::input name="max_deposit" inputmode="decimal" :label="__('Largest deposit')" :value="$scheme->max_deposit" :hint="__('Empty = no limit')" />
                 <x-nit::input name="minimum_balance" inputmode="decimal" :label="__('Minimum balance')" :value="$scheme->minimum_balance" required :hint="__('Must stay after a withdrawal.')" />
                 <x-nit::input name="max_withdrawals_per_month" type="number" min="1" :label="__('Withdrawals a month')" :value="$scheme->max_withdrawals_per_month" :hint="__('Empty = no limit')" />
+                <x-nit::input name="term_months" type="number" min="1" :label="__('Term in months (DPS / FDR)')" :value="$scheme->term_months" :hint="__('Empty = no fixed term. Each account then gets a maturity date.')" />
+                <div class="nx-field">
+                    <input type="hidden" name="withdraw_before_maturity" value="0">
+                    <label class="nx-check"><input type="checkbox" name="withdraw_before_maturity" value="1" @checked(old('withdraw_before_maturity', ($scheme->withdraw_before_maturity ?? true) ? '1' : '0') === '1')> <span>{{ __('Withdrawals before maturity allowed') }}</span></label>
+                </div>
                 <x-nit::input name="interest_rate" inputmode="decimal" :label="__('Interest rate % a year')" :value="$scheme->interest_rate" :hint="__('For information; interest is posted by journal.')" />
                 <div class="nx-field">
                     <input type="hidden" name="allow_withdrawal" value="0">

@@ -13,6 +13,7 @@
                 @include('finance::savings.member-picker')
                 <x-nit::select name="savings_scheme_id" :label="__('Scheme')" :options="$schemes" required :placeholder="__('Choose…')" />
                 <x-nit::input name="opened_on" type="date" :label="__('Opened on')" :value="today()->toDateString()" required />
+                <x-nit::input name="installment_amount" inputmode="decimal" :label="__('Regular deposit')" :hint="__('Expected each period for daily, weekly or monthly schemes (empty = the scheme\'s smallest deposit).')" />
                 @can(\SCMS\Finance\Support\Abilities::SAVINGS_OPENING)
                     <x-nit::input name="opening_balance" inputmode="decimal" :label="__('Opening balance (go-live)')" :hint="__('Only for an account the member already had before the system: credited on the opening date against opening balance equity. No cash moves.')" />
                 @endcan

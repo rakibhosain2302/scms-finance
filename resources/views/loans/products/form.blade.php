@@ -22,7 +22,7 @@
                 <x-nit::input name="grace_days" type="number" min="0" :label="__('Grace days')" :value="$product->grace_days" :hint="__('Days after the due date before a penalty is asked for.')" />
                 <x-nit::select name="penalty_type" :label="__('Late payment penalty')" :options="$penaltyTypes" :value="$product->penalty_type?->value ?? 'none'" required :hint="__('Charged once per late installment; the repayment form fills it in. Changes apply to running loans too.')" />
                 <x-nit::input name="penalty_value" inputmode="decimal" :label="__('Penalty amount or %')" :value="$product->penalty_value" :hint="__('Fixed: taka per late installment. Percent: of what is still unpaid on it.')" />
-                <div></div>
+                <x-nit::input name="guarantors_required" type="number" min="0" max="5" :label="__('Guarantors required')" :value="$product->guarantors_required ?? 0" />
                 <x-nit::select name="receivable_account_id" :label="__('Loan receivable account')" :options="$receivables" :value="$product->receivable_account_id" required :placeholder="__('Choose…')" />
                 <x-nit::select name="interest_income_account_id" :label="__('Interest income account')" :options="$incomeAccounts" :value="$product->interest_income_account_id" required :placeholder="__('Choose…')" />
                 <x-nit::select name="penalty_income_account_id" :label="__('Penalty income account')" :options="$incomeAccounts" :value="$product->penalty_income_account_id" required :placeholder="__('Choose…')" />

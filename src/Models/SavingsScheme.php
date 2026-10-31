@@ -16,14 +16,14 @@ class SavingsScheme extends FinanceModel
 
     protected $fillable = [
         'code', 'name', 'frequency', 'min_deposit', 'max_deposit', 'minimum_balance', 'allow_withdrawal',
-        'max_withdrawals_per_month', 'interest_rate', 'liability_account_id', 'is_active', 'description',
+        'max_withdrawals_per_month', 'term_months', 'withdraw_before_maturity', 'interest_rate', 'liability_account_id', 'is_active', 'description',
     ];
 
     protected array $money = ['min_deposit', 'max_deposit', 'minimum_balance'];
 
     protected function casts(): array
     {
-        return ['frequency' => Frequency::class, 'allow_withdrawal' => 'boolean', 'is_active' => 'boolean', 'interest_rate' => 'decimal:4'];
+        return ['frequency' => Frequency::class, 'allow_withdrawal' => 'boolean', 'withdraw_before_maturity' => 'boolean', 'is_active' => 'boolean', 'interest_rate' => 'decimal:4'];
     }
 
     public function liabilityAccount(): BelongsTo

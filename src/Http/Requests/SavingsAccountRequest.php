@@ -19,6 +19,7 @@ class SavingsAccountRequest extends FinanceRequest
             'savings_scheme_id' => ['required', 'integer', 'exists:finance_savings_schemes,id'],
             'opened_on' => ['required', 'date', 'before_or_equal:today'],
             'note' => ['nullable', 'string', 'max:2000'],
+            'installment_amount' => $this->moneyRule(false),
             'opening_balance' => $this->user()?->can(Abilities::SAVINGS_OPENING) ? $this->moneyRule(false, false) : ['prohibited'],
         ];
     }

@@ -43,7 +43,7 @@ class LoanService
     ) {
     }
 
-    /** @param  array{branch_id: int, member_id: int, loan_product_id: int, principal: string, installments_count: int, applied_on: string, purpose?: ?string}  $data */
+    /** @param  array{branch_id: int, member_id: int, loan_product_id: int, principal: string, installments_count: int, applied_on: string, purpose?: ?string, collateral?: ?string, guarantors?: list<array<string, mixed>>}  $data */
     public function apply(array $data, ?Authenticatable $user): Loan
     {
         $branchId = (int) $data['branch_id'];
@@ -54,13 +54,17 @@ class LoanService
         $principal = Money::of($data['principal']);
         $count = (int) $data['installments_count'];
         $this->assertTerms($product, $principal, $count);
+        $guarantors = array_values(array_filter($data['guarantors'] ?? [], fn ($g) => filled($g['name'] ?? null)));
+        if (count($guarantors) < (int) $product->guarantors_required) {
+            throw new FinanceException(__(':name needs :n guarantors.', ['name' => $product->name, 'n' => $product->guarantors_required]));
+        }
 
         // The terms are frozen on the loan; the interest is recomputed with the real first due date at disbursement.
         $preview = $this->calculator->build($principal, $product->interest_method, (string) $product->interest_rate, $count,
             $product->repayment_frequency, $product->repayment_frequency->advance(Carbon::parse($data['applied_on'])));
 
-        return DB::transaction(function () use ($data, $branchId, $product, $principal, $count, $preview, $user) {
-            $loan = new Loan(['purpose' => $data['purpose'] ?? null]);
+        return DB::transaction(function () use ($data, $branchId, $product, $principal, $count, $preview, $user, $guarantors) {
+            $loan = new Loan(['purpose' => $data['purpose'] ?? null, 'collateral' => $data['collateral'] ?? null]);
             $loan->forceFill([
                 'loan_number' => $this->numbers->next('loan', $data['applied_on'], $branchId),
                 'branch_id' => $branchId,
@@ -78,6 +82,10 @@ class LoanService
                 'principal_outstanding' => '0',
                 'created_by' => $user?->getAuthIdentifier(),
             ])->save();
+
+            foreach ($guarantors as $guarantor) {
+                $loan->guarantors()->create(array_intersect_key($guarantor, array_flip(['member_id', 'name', 'relation', 'phone', 'nid'])));
+            }
 
             return $loan;
         });

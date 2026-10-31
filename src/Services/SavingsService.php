@@ -58,6 +58,8 @@ class SavingsService
                 'opened_on' => Carbon::parse($data['opened_on'])->toDateString(),
                 'status' => SavingsAccountStatus::Active->value,
                 'balance' => '0',
+                'maturity_date' => $scheme->term_months ? Carbon::parse($data['opened_on'])->addMonthsNoOverflow((int) $scheme->term_months)->toDateString() : null,
+                'installment_amount' => Money::of(filled($data['installment_amount'] ?? null) ? $data['installment_amount'] : $scheme->min_deposit)->toString(),
                 'created_by' => $user?->getAuthIdentifier(),
             ])->save();
 

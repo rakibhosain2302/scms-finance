@@ -40,6 +40,7 @@ class ChartOfAccountsSeeder extends Seeder
         ['4400', 'Loan Processing Fees', 'income', 'fee_income', true, '4000'],
         ['4500', 'Admission Fees', 'income', 'fee_income', true, '4000'],
         ['4600', 'Registration Fees', 'income', 'fee_income', true, '4000'],
+        ['4700', 'Recovery of Written-off Loans', 'income', 'general', true, '4000'],
         ['4900', 'Other Income', 'income', 'general', true, '4000'],
 
         ['5000', 'Expenses', 'expense', 'general', false, null],

@@ -105,8 +105,18 @@ class SavingsTransactionService
         return $this->creditWithoutCash(SavingsTransactionType::Opening, $account, $amount, $date, 'opening_balance_equity', LineComponent::Opening, $user);
     }
 
+    /**
+     * Dividend on the member's shares, from the accumulated surplus (DividendService, inside its transaction):
+     *
+     *     Dr Accumulated surplus    Cr Member savings (sub-ledger: the savings account)
+     */
+    public function creditDividend(SavingsAccount $account, Money $amount, string $date, int $runId, ?Authenticatable $user): SavingsTransaction
+    {
+        return $this->creditWithoutCash(SavingsTransactionType::Dividend, $account, $amount, $date, 'accumulated_surplus', LineComponent::Dividend, $user, null, $runId);
+    }
+
     /** A credit to the member's savings that moves no cash; $debitRole is the account of the other side. */
-    private function creditWithoutCash(SavingsTransactionType $type, SavingsAccount $account, Money $amount, string $date, string $debitRole, LineComponent $component, ?Authenticatable $user, ?int $runId = null): SavingsTransaction
+    private function creditWithoutCash(SavingsTransactionType $type, SavingsAccount $account, Money $amount, string $date, string $debitRole, LineComponent $component, ?Authenticatable $user, ?int $runId = null, ?int $dividendRunId = null): SavingsTransaction
     {
         if (! $amount->isPositive()) {
             throw new FinanceException(__('The amount must be more than zero.'));
@@ -127,6 +137,7 @@ class SavingsTransactionService
             'transaction_date' => Carbon::parse($date)->toDateString(),
             'amount' => $amount->toString(),
             'savings_interest_run_id' => $runId,
+            'dividend_run_id' => $dividendRunId,
             'status' => EntryStatus::Posted->value,
             'created_by' => $user?->getAuthIdentifier(),
             'posted_by' => $user?->getAuthIdentifier(),
@@ -240,6 +251,9 @@ class SavingsTransactionService
         $scheme = $account->scheme;
         if (! $scheme->allow_withdrawal) {
             throw new FinanceException(__(':scheme does not allow withdrawals.', ['scheme' => $scheme->name]));
+        }
+        if (! $scheme->withdraw_before_maturity && $account->maturity_date && Carbon::parse($date)->lt($account->maturity_date)) {
+            throw new FinanceException(__('This account matures on :date; nothing can be withdrawn before.', ['date' => $account->maturity_date->format('j M Y')]));
         }
 
         if ($scheme->max_withdrawals_per_month) {

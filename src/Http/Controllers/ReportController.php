@@ -120,6 +120,24 @@ class ReportController extends Controller
         ]);
     }
 
+    public function receiptsPayments(Request $request)
+    {
+        [$branchIds, $filters] = $this->filters($request, $this->yearStart());
+
+        return $this->view('reports.receipts-payments', $filters + ['report' => $this->reports->receiptsAndPayments($branchIds, $filters['from'], $filters['to'])]);
+    }
+
+    public function savingsDues(Request $request)
+    {
+        [$branchIds, $filters] = $this->filters($request, today()->startOfMonth());
+        $rows = $this->reports->savingsDues($branchIds, $filters['from'], $filters['to']);
+
+        return $this->view('reports.savings-dues', $filters + [
+            'rows' => $rows,
+            'members' => $this->members()->labels(array_map(fn ($r) => $r['account']->member_id, $rows)),
+        ]);
+    }
+
     public function branches(Request $request)
     {
         [$branchIds, $filters] = $this->filters($request, $this->yearStart());

@@ -23,9 +23,9 @@ class Loan extends FinanceModel
 
     protected $table = 'finance_loans';
 
-    protected $fillable = ['purpose'];
+    protected $fillable = ['purpose', 'collateral'];
 
-    protected array $money = ['principal', 'processing_fee', 'total_interest', 'principal_outstanding'];
+    protected array $money = ['principal', 'processing_fee', 'total_interest', 'principal_outstanding', 'original_principal'];
 
     protected function casts(): array
     {
@@ -39,6 +39,8 @@ class Loan extends FinanceModel
             'first_due_on' => 'date',
             'closed_on' => 'date',
             'written_off_on' => 'date',
+            'rescheduled_at' => 'datetime',
+            'imported' => 'boolean',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
         ];
@@ -67,6 +69,16 @@ class Loan extends FinanceModel
     public function disbursementEntry(): BelongsTo
     {
         return $this->belongsTo(JournalEntry::class, 'disbursement_entry_id')->withoutGlobalScope('finance_branch');
+    }
+
+    public function guarantors(): HasMany
+    {
+        return $this->hasMany(LoanGuarantor::class);
+    }
+
+    public function recoveries(): HasMany
+    {
+        return $this->hasMany(LoanRecovery::class)->withoutGlobalScope('finance_branch')->orderByDesc('recovery_date')->orderByDesc('id');
     }
 
     public function writeOffEntry(): BelongsTo

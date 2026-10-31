@@ -20,4 +20,7 @@ enum LineComponent: string
     case WriteOff = 'write_off';
     // Interest credited to a savings account (kept apart from loan interest income).
     case SavingsInterest = 'savings_interest';
+    case Share = 'share';
+    case Recovery = 'recovery';
+    case Dividend = 'dividend';
 }

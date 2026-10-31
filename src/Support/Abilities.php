@@ -33,6 +33,11 @@ final class Abilities
     public const SAVINGS_WITHDRAW = 'finance_savings_withdraw';
     public const SAVINGS_INTEREST = 'finance_savings_interest';
     public const SAVINGS_OPENING = 'finance_savings_opening';
+    public const WITHDRAWAL_APPROVE = 'finance_withdrawal_approve';
+    public const DIVIDEND_POST = 'finance_dividend_post';
+
+    public const SHARE_VIEW = 'finance_share_view';
+    public const SHARE_MANAGE = 'finance_share_manage';
 
     public const LOAN_VIEW = 'finance_loan_view';
     public const LOAN_PRODUCT_MANAGE = 'finance_loan_product_manage';
@@ -41,6 +46,9 @@ final class Abilities
     public const LOAN_DISBURSE = 'finance_loan_disburse';
     public const LOAN_REPAY = 'finance_loan_repay';
     public const LOAN_WRITE_OFF = 'finance_loan_write_off';
+    public const LOAN_IMPORT = 'finance_loan_import';
+    public const LOAN_RESCHEDULE = 'finance_loan_reschedule';
+    public const LOAN_WAIVE = 'finance_loan_waive';
 
     public const INCOME_VIEW = 'finance_income_view';
     public const INCOME_CREATE = 'finance_income_create';
@@ -88,6 +96,13 @@ final class Abilities
                 self::SAVINGS_WITHDRAW => 'Pay savings withdrawals',
                 self::SAVINGS_INTEREST => 'Post interest on savings',
                 self::SAVINGS_OPENING => 'Enter opening balances of savings accounts (go-live)',
+                self::WITHDRAWAL_APPROVE => 'Approve large withdrawals',
+            ],
+            'Finance: Shares' => [
+                'icon' => 'fa-certificate',
+                self::SHARE_VIEW => 'View share capital',
+                self::SHARE_MANAGE => 'Sell and refund shares',
+                self::DIVIDEND_POST => 'Distribute dividend on shares',
             ],
             'Finance: Loans' => [
                 'icon' => 'fa-hand-holding-usd',
@@ -98,6 +113,9 @@ final class Abilities
                 self::LOAN_DISBURSE => 'Disburse loans',
                 self::LOAN_REPAY => 'Take loan repayments',
                 self::LOAN_WRITE_OFF => 'Write off loans',
+                self::LOAN_IMPORT => 'Bring in running loans (go-live)',
+                self::LOAN_RESCHEDULE => 'Reschedule loans',
+                self::LOAN_WAIVE => 'Waive loan interest (early settlement)',
             ],
             'Finance: Income & Expense' => [
                 'icon' => 'fa-receipt',

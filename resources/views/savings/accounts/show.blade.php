@@ -18,6 +18,8 @@
         <dl class="fin-facts">
             <dt>{{ __('Branch') }}</dt><dd>{{ $account->branch?->name }}</dd>
             <dt>{{ __('Opened') }}</dt><dd>{{ $account->opened_on->format('j M Y') }}</dd>
+            @if ($account->maturity_date)<dt>{{ __('Matures') }}</dt><dd>{{ $account->maturity_date->format('j M Y') }}</dd>@endif
+            @if ($account->installment_amount)<dt>{{ __('Regular deposit') }}</dt><dd>@finmoney($account->installment_amount)</dd>@endif
             @if ($account->closed_on)<dt>{{ __('Closed') }}</dt><dd>{{ $account->closed_on->format('j M Y') }}</dd>@endif
             <dt>{{ __('Opened by') }}</dt><dd>{{ $account->creator?->name ?? '—' }}</dd>
             @if ($account->note)<dt>{{ __('Note') }}</dt><dd>{{ $account->note }}</dd>@endif

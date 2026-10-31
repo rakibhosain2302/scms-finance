@@ -19,7 +19,7 @@ class LoanProduct extends FinanceModel
 
     protected $fillable = [
         'code', 'name', 'interest_method', 'interest_rate', 'repayment_frequency', 'min_installments', 'max_installments',
-        'min_amount', 'max_amount', 'processing_fee_rate', 'grace_days', 'penalty_type', 'penalty_value', 'receivable_account_id',
+        'min_amount', 'max_amount', 'processing_fee_rate', 'grace_days', 'penalty_type', 'penalty_value', 'guarantors_required', 'receivable_account_id',
         'interest_income_account_id', 'penalty_income_account_id', 'fee_income_account_id', 'is_active', 'description',
     ];
 

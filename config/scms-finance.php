@@ -15,6 +15,9 @@ return [
 
     'pagination' => 20,
 
+    // Price of one share (null = shares are not counted, any amount is accepted).
+    'share_price' => env('SCMS_FINANCE_SHARE_PRICE'),
+
     'routes' => [
         'enabled' => true,
         'prefix' => 'finance',
@@ -55,6 +58,7 @@ return [
         'number' => 'member_no',      // shown before the name when set (null = none)
         'branch' => 'branch_id',      // a member may only use accounts of their own branch (null = not checked)
         'search' => ['name', 'member_no'],
+        'phone' => 'phone',           // mobile number for SMS (null = no SMS)
     ],
 
     'tables' => [
@@ -83,11 +87,15 @@ return [
             'loan_disbursement' => 'DSB',
             'loan_repayment' => 'REP',
             'loan_write_off' => 'WOF',
+            'loan_recovery' => 'RCV',
             'income' => 'INC',
             'expense' => 'EXP',
             'transfer' => 'TRF',
             'reversal' => 'REV',
             'opening_balance' => 'OB',
+            'share_purchase' => 'SHR',
+            'share_refund' => 'SHF',
+            'dividend' => 'DIV',
             'year_close' => 'YC',
         ],
     ],
@@ -103,10 +111,12 @@ return [
         'member_savings' => '2100',
         'opening_balance_equity' => '3100',
         'accumulated_surplus' => '3200',
+        'share_capital' => '3300',
         'interest_income' => '4200',
         'penalty_income' => '4300',
         'fee_income' => '4400',
         'loan_write_off' => '5700',
+        'loan_recovery' => '4700',
         'savings_interest_expense' => '5800',
     ],
 
@@ -123,6 +133,9 @@ return [
         // Staff (not super admins) without any branch see and touch no branch. nit-master would let
         // them see every branch; false keeps that rule.
         'require_branch' => env('SCMS_FINANCE_REQUIRE_BRANCH', true),
+        // Withdrawals above this amount wait for a second person on nit-master's Approvals page
+        // (ability finance_withdrawal_approve; super admins go through at once). null = never.
+        'withdrawal_approval_above' => env('SCMS_FINANCE_WITHDRAWAL_APPROVAL_ABOVE'),
         // Repayment order inside each installment.
         'repayment_order' => ['interest', 'principal'],
     ],
@@ -132,6 +145,14 @@ return [
         'directory' => 'finance',
         'max_kb' => 4096,
         'mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+    ],
+
+    // SMS to members through nit-master's gateway (Settings › Mail & SMS).
+    'sms' => [
+        // After deposits, withdrawals, loan disbursements and repayments.
+        'notify' => env('SCMS_FINANCE_SMS', false),
+        // finance:loan-reminders: days before an installment falls due.
+        'reminder_days' => (int) env('SCMS_FINANCE_SMS_REMINDER_DAYS', 2),
     ],
 
     // Sidebar entry (nit-master's config('sidebar') format). false = none.

@@ -248,6 +248,14 @@ counter → cash/bank accounts (in id order). Examples:
 | Loans | products, application, approve/reject/cancel, disburse, schedule, repayments, reversal | Interest none / flat / declining; processing fee; penalty taken with a repayment; maker-checker approval |
 | Income / Expense | draft/post/reverse vouchers with attachment | Account type enforced |
 | Dashboard | today's figures, balances, overdue | `DashboardService` reusable in the app's dashboard |
+| Savings interest | preview and post per scheme, branch and period | Daily balance × rate ÷ 365; a period is credited once |
+| Dividend | preview and post per closed year | Share balance on the last day × rate, out of accumulated surplus, into a savings scheme |
+| Share capital | sell, refund, reverse | Equity (3300), member tagged; optional `SCMS_FINANCE_SHARE_PRICE` |
+| Go-live | savings opening balance (on opening), running loans (form and CSV) | Against opening balance equity, no cash |
+| Loan changes | reschedule, waive interest, write-off, recovery after write-off | Penalty rules per product (fixed / percent, grace days); guarantors and collateral |
+| Bank reconciliation | statement, tick cleared lines, complete when they match | Nothing is posted |
+| Large withdrawals | through nit-master Approvals above `SCMS_FINANCE_WITHDRAWAL_APPROVAL_ABOVE` | Checked when asked, posted when approved |
+| SMS | after deposits, withdrawals, disbursements, repayments; `finance:loan-reminders` | `SCMS_FINANCE_SMS=true`, nit-master gateway |
 
 ## Services
 
@@ -390,10 +398,9 @@ FINANCE_TEST_DB_DATABASE=scms_finance_test FINANCE_TEST_DB_USERNAME=... FINANCE_
 
 ## Limits and open points
 
-- Maker-checker uses the loan workflow and separate post/reverse abilities; nit-master `Approvals`
-  (request → approve) is not wired to postings yet.
-- Savings interest / dividends are posted by journal entry; there is no automatic calculation.
-- Penalties are entered with a repayment; there is no automatic penalty accrual.
+- Maker-checker: loans need another approver; drafts (journals, vouchers, transfers) are posted by
+  someone other than their writer; large withdrawals go through nit-master `Approvals`.
+- Interest income is booked when received (cash basis); waived interest is never income.
 - Members are chosen from a select (500 per branch, with search); a remote search is needed for very large branches.
 - Inter-branch transactions (a member of branch A paying in branch B) are not supported.
 - Dates are compared in the app timezone; set `APP_TIMEZONE=Asia/Dhaka` so a 01:00 deposit lands on the right business day.

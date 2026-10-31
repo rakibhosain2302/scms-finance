@@ -25,6 +25,8 @@ class SavingsSchemeRequest extends FinanceRequest
             'minimum_balance' => $this->moneyRule(true, false),
             'allow_withdrawal' => ['boolean'],
             'max_withdrawals_per_month' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'term_months' => ['nullable', 'integer', 'min:1', 'max:600'],
+            'withdraw_before_maturity' => ['boolean'],
             'interest_rate' => $this->rateRule(),
             'liability_account_id' => ['required', 'integer', Rule::exists('finance_accounts', 'id')
                 ->where('subtype', AccountSubtype::MemberSavings->value)->where('is_postable', true)],

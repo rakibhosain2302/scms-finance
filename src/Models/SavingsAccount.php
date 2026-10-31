@@ -22,7 +22,7 @@ class SavingsAccount extends FinanceModel
 
     protected function casts(): array
     {
-        return ['status' => SavingsAccountStatus::class, 'opened_on' => 'date', 'closed_on' => 'date'];
+        return ['status' => SavingsAccountStatus::class, 'opened_on' => 'date', 'closed_on' => 'date', 'maturity_date' => 'date'];
     }
 
     public function scheme(): BelongsTo

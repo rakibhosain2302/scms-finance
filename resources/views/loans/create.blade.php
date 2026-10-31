@@ -26,7 +26,21 @@
                 <x-nit::input name="installments_count" type="number" min="1" :label="__('Installments')" required />
                 <x-nit::input name="applied_on" type="date" :label="__('Applied on')" :value="today()->toDateString()" required />
                 <x-nit::input name="purpose" :label="__('Purpose')" wrapper-class="nx-full" maxlength="500" />
+                <x-nit::textarea name="collateral" :label="__('Collateral')" :hint="__('What secures the loan, if anything (land deed, gold, …).')" rows="2" wrapper-class="nx-full" />
             </div>
+            <h3 class="fs-6 fw-semibold mt-5 mb-3">{{ __('Guarantors') }}</h3>
+            <div class="table-responsive"><table class="table align-middle mb-0">
+                <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Relation') }}</th><th>{{ __('Mobile') }}</th><th>{{ __('NID') }}</th></tr></thead>
+                <tbody>
+                    @for ($g = 0; $g < 3; $g++)
+                        <tr>
+                            @foreach (['name', 'relation', 'phone', 'nid'] as $field)
+                                <td><input type="text" name="guarantors[{{ $g }}][{{ $field }}]" value="{{ old("guarantors.$g.$field") }}" class="form-control form-control-sm" aria-label="{{ __('Guarantor :n :field', ['n' => $g + 1, 'field' => $field]) }}"></td>
+                            @endforeach
+                        </tr>
+                    @endfor
+                </tbody>
+            </table></div>
             <div class="mt-5">
                 <button type="button" class="nx-btn nx-btn-light" id="fin-preview"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ __('Show schedule') }}</button>
                 <div id="fin-schedule" class="mt-3" aria-live="polite"></div>

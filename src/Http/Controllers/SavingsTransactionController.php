@@ -3,6 +3,8 @@
 namespace SCMS\Finance\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Nit\Master\Support\Approvals;
 use SCMS\Finance\Enums\EntryStatus;
 use SCMS\Finance\Enums\SavingsAccountStatus;
 use SCMS\Finance\Enums\SavingsTransactionType;
@@ -14,6 +16,7 @@ use SCMS\Finance\Models\SavingsTransaction;
 use SCMS\Finance\Services\LedgerService;
 use SCMS\Finance\Services\SavingsTransactionService;
 use SCMS\Finance\Support\Abilities;
+use SCMS\Finance\Support\Money;
 
 class SavingsTransactionController extends Controller
 {
@@ -68,6 +71,21 @@ class SavingsTransactionController extends Controller
         $account = SavingsAccount::query()->findOrFail($data['savings_account_id']);
         $this->authorizeAbility($type === SavingsTransactionType::Deposit ? 'deposit' : 'withdraw', $account);
 
+        if ($type === SavingsTransactionType::Withdrawal && $this->needsApproval($data['amount'])) {
+            return $this->attempt(function () use ($account, $data, $request) {
+                // Checked now (balance, limits), then carried out when someone else approves.
+                DB::beginTransaction();
+                try {
+                    $this->service->withdraw($account, $data, $request->user());
+                } finally {
+                    DB::rollBack();
+                }
+
+                return Approvals::request('finance_withdrawal', 'post', SavingsTransaction::class, $data + ['savings_account_id' => $account->id], null,
+                    __('Withdrawal of :amount from :account', ['amount' => Money::of($data['amount'])->format(), 'account' => $account->account_number]));
+            }, fn () => redirect()->route('finance.savings-accounts.show', $account)->with('success', __('The withdrawal is above the limit and was sent for approval.')));
+        }
+
         return $this->attempt(
             fn () => $type === SavingsTransactionType::Deposit
                 ? $this->service->deposit($account, $data, $request->user())
@@ -75,6 +93,14 @@ class SavingsTransactionController extends Controller
             fn (SavingsTransaction $t) => redirect()->route('finance.savings-transactions.show', $t)
                 ->with('success', __(':type :number posted.', ['type' => $t->type->label(), 'number' => $t->number])),
         );
+    }
+
+    private function needsApproval(string $amount): bool
+    {
+        $limit = config('scms-finance.rules.withdrawal_approval_above');
+
+        return $limit !== null && $limit !== '' && class_exists(Approvals::class)
+            && Money::of($amount)->greaterThan((string) $limit) && Approvals::needed('finance_withdrawal');
     }
 
     public function show(SavingsTransaction $savingsTransaction)
